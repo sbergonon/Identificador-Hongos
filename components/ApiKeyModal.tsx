@@ -43,7 +43,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-green-900 dark:text-emerald-200">{t('manageApiKey')}</h2>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-amber-200">{t('manageApiKey')}</h2>
             <button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -61,14 +61,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
               placeholder={t('apiKeyPlaceholder')}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <button 
                 onClick={handleSave} 
-                className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 disabled:opacity-50"
                 disabled={!apiKeyInput.trim()}
             >
                 {t('saveAndRetry')}

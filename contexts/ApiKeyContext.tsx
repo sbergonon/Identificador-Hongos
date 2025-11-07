@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 
 interface ApiKeyContextState {
@@ -38,7 +37,9 @@ export const ApiKeyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setUserApiKey(null);
   };
   
-  const effectiveApiKey = userApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+  // Accede de forma segura a process.env para evitar el error "process is not defined" en algunos entornos.
+  const fallbackApiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) ? process.env.API_KEY : null;
+  const effectiveApiKey = userApiKey || fallbackApiKey;
 
   const value: ApiKeyContextState = {
     userApiKey,

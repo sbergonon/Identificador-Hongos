@@ -102,7 +102,7 @@ const Notification: React.FC<{ message: string; onClose: () => void; }> = ({ mes
 
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-fade-in-down" role="alert" aria-live="assertive">
-      <div className="flex items-center gap-3 bg-green-600 dark:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg">
+      <div className="flex items-center gap-3 bg-amber-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg">
         <Icon name="bookmark" className="w-5 h-5" />
         <span>{message}</span>
       </div>
@@ -124,8 +124,8 @@ const SearchInput: React.FC<{ onSearch: (query: string) => void; isLoading: bool
   return (
     <form onSubmit={handleSubmit} className="w-full mb-6">
       <div className="relative">
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} disabled={isLoading} placeholder={placeholder} className="w-full pl-4 pr-12 py-3 bg-white dark:bg-slate-700 border-green-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-emerald-500 transition-shadow dark:text-slate-200"/>
-        <button type="submit" disabled={isLoading || !query.trim()} className="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-green-600 dark:text-emerald-400 hover:text-green-800 dark:hover:text-emerald-300 disabled:text-gray-300 dark:disabled:text-slate-500 transition-colors">
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} disabled={isLoading} placeholder={placeholder} className="w-full pl-4 pr-12 py-3 bg-white dark:bg-slate-700 border-amber-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow dark:text-slate-200"/>
+        <button type="submit" disabled={isLoading || !query.trim()} className="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 disabled:text-gray-300 dark:disabled:text-slate-500 transition-colors">
           <Icon name="search" className="w-6 h-6" />
         </button>
       </div>
@@ -148,10 +148,10 @@ const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: bool
   };
   
   return (
-    <div className="w-full max-w-md p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-green-200 dark:border-emerald-700 text-center">
+    <div className="w-full max-w-md p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200 dark:border-stone-700 text-center">
       <div className="flex justify-center items-center gap-3 mb-4">
-        <Icon name="mushroom" className="w-10 h-10 text-green-800 dark:text-emerald-200" />
-        <h2 className="text-3xl font-bold text-green-900 dark:text-emerald-200">{t('appName')}</h2>
+        <Icon name="mushroom" className="w-10 h-10 text-amber-800 dark:text-amber-200" />
+        <h2 className="text-3xl font-bold text-stone-900 dark:text-amber-200">{t('appName')}</h2>
       </div>
       <p className="text-gray-600 dark:text-slate-400 mb-6">{t('identifyMushroomTitle')}</p>
       
@@ -165,11 +165,11 @@ const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: bool
       
       <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
-          <button onClick={() => { cameraInputRef.current?.click(); triggerHapticFeedback(); }} disabled={isLoading} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 dark:bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 dark:hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-emerald-500 focus:ring-offset-2 transition-transform transform hover:scale-105">
+          <button onClick={() => { cameraInputRef.current?.click(); triggerHapticFeedback(); }} disabled={isLoading} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-transform transform hover:scale-105">
           <Icon name="camera" className="w-5 h-5" />{t('takePhoto')}
           </button>
           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
-          <button onClick={() => { fileInputRef.current?.click(); triggerHapticFeedback(); }} disabled={isLoading} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-700 text-green-700 dark:text-emerald-300 font-semibold rounded-lg shadow-md border border-green-300 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-emerald-500 focus:ring-offset-2 transition-transform transform hover:scale-105">
+          <button onClick={() => { fileInputRef.current?.click(); triggerHapticFeedback(); }} disabled={isLoading} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 font-semibold rounded-lg shadow-md border border-amber-300 dark:border-slate-600 hover:bg-amber-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-transform transform hover:scale-105">
           <Icon name="upload" className="w-5 h-5" />{t('uploadFile')}
           </button>
       </div>
@@ -180,8 +180,8 @@ const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: bool
 
 const Loader: React.FC<{ message: string, subMessage: string }> = ({ message, subMessage }) => (
     <div className="text-center p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg max-w-md">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 dark:border-emerald-500 mx-auto"></div>
-        <p className="mt-6 text-lg font-semibold text-green-800 dark:text-emerald-200">{message}</p>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-600 dark:border-amber-500 mx-auto"></div>
+        <p className="mt-6 text-lg font-semibold text-amber-800 dark:text-amber-200">{message}</p>
         <p className="mt-2 text-gray-600 dark:text-slate-400">{subMessage}</p>
     </div>
 );
@@ -224,17 +224,17 @@ interface ShareableCardProps {
 const ShareableCard: React.FC<ShareableCardProps> = ({ mushroomInfo, imageSrc, onRef }) => {
     const { t } = useLanguage();
     return (
-        <div ref={onRef} className="w-[400px] bg-white dark:bg-slate-800 font-sans shadow-2xl rounded-lg overflow-hidden border border-green-200 dark:border-emerald-700">
+        <div ref={onRef} className="w-[400px] bg-white dark:bg-slate-800 font-sans shadow-2xl rounded-lg overflow-hidden border border-amber-200 dark:border-stone-700">
             <img src={imageSrc} alt={mushroomInfo.nombreComun} className="w-full h-52 object-cover" />
             <div className="p-5">
-                <h2 className="text-2xl font-extrabold text-green-800 dark:text-emerald-200">{mushroomInfo.nombreComun}</h2>
+                <h2 className="text-2xl font-extrabold text-stone-800 dark:text-amber-200">{mushroomInfo.nombreComun}</h2>
                 <p className="text-md text-gray-500 dark:text-slate-400 italic mb-3">{mushroomInfo.nombreCientifico}</p>
                 <div className="mb-4">
                   <ToxicityMeter level={mushroomInfo.toxicidad.nivelToxicidad} />
                 </div>
                  <p className="text-sm text-gray-700 dark:text-slate-300 line-clamp-3">{mushroomInfo.descripcionGeneral}</p>
             </div>
-            <div className="px-5 py-3 bg-green-50 dark:bg-slate-900/50 flex items-center justify-between text-xs text-green-800 dark:text-emerald-400">
+            <div className="px-5 py-3 bg-stone-50 dark:bg-slate-900/50 flex items-center justify-between text-xs text-stone-800 dark:text-amber-400">
                 <span className="font-bold">{t('appName')}</span>
                 <Icon name="mushroom" className="w-4 h-4" />
             </div>
@@ -348,8 +348,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
             <div className="mb-2 border-b border-gray-200 dark:border-slate-700 last:border-b-0">
                 <button className="w-full flex justify-between items-center py-4 focus:outline-none text-left" onClick={() => toggleSection(title)} aria-expanded={isOpen}>
                     <div className="flex items-center min-w-0 mr-4">
-                        <Icon name={icon} className="w-7 h-7 text-green-700 dark:text-emerald-400 mr-3 flex-shrink-0" />
-                        <h3 className="text-xl font-bold text-green-900 dark:text-emerald-200 break-words">{title}</h3>
+                        <Icon name={icon} className="w-7 h-7 text-amber-700 dark:text-amber-400 mr-3 flex-shrink-0" />
+                        <h3 className="text-xl font-bold text-stone-900 dark:text-amber-200 break-words">{title}</h3>
                     </div>
                     <Icon name="chevron-down" className={`w-6 h-6 text-gray-500 dark:text-slate-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -379,7 +379,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
             <ShareableCard mushroomInfo={mushroomInfo} imageSrc={imageSrc} onRef={(node) => shareableCardRef.current = node} />
         </div>
     )}
-    <div ref={resultCardRef} className="w-full max-w-4xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden my-8 border border-green-200 dark:border-emerald-800">
+    <div ref={resultCardRef} className="w-full max-w-4xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden my-8 border border-amber-200 dark:border-stone-800">
         <div className="p-6 md:p-8">
             <div className="md:flex md:gap-8">
                 <div className="md:w-1/3 mb-6 md:mb-0">
@@ -388,18 +388,18 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                 </div>
                 <div className="md:w-2/3">
                     <div className="mb-4">
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-green-800 dark:text-emerald-200 break-words">{mushroomInfo.nombreComun}</h2>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-stone-800 dark:text-amber-200 break-words">{mushroomInfo.nombreComun}</h2>
                         <p className="text-lg sm:text-xl text-gray-500 dark:text-slate-400 italic mt-1 break-words">{mushroomInfo.nombreCientifico}</p>
                         {mushroomInfo.sinonimos?.length > 0 && <p className="text-sm text-gray-600 dark:text-slate-300 mt-2 break-words"><strong>{t('alsoKnownAs')}:</strong> {mushroomInfo.sinonimos.join(', ')}</p>}
                     </div>
                     <div className="flex flex-wrap justify-start sm:justify-end gap-2">
-                        <button onClick={handleShareAsImage} disabled={isSharing} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
+                        <button onClick={handleShareAsImage} disabled={isSharing} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
                             {isSharing ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="share-up" className="w-4 h-4" />}
                             {isSharing ? t('sharing') : t('share')}
                         </button>
-                        {onStartCompare && (<button onClick={() => { onStartCompare(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"><Icon name="compare" className="w-4 h-4" />{t('compare')}</button>)}
-                        <button onClick={onToggleCollection} className={`hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${ isInCollection ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`}><Icon name="bookmark" className="w-4 h-4" />{isInCollection ? t('saved') : t('save')}</button>
-                        <button onClick={handleExportPdf} disabled={isExporting} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
+                        {onStartCompare && (<button onClick={() => { onStartCompare(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"><Icon name="compare" className="w-4 h-4" />{t('compare')}</button>)}
+                        <button onClick={onToggleCollection} className={`hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${ isInCollection ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`}><Icon name="bookmark" className="w-4 h-4" />{isInCollection ? t('saved') : t('save')}</button>
+                        <button onClick={handleExportPdf} disabled={isExporting} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
                             {isExporting ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="download" className="w-4 h-4" />}
                             {isExporting ? t('exporting') : t('exportToPdf')}
                         </button>
@@ -409,12 +409,12 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                     </div>
                     <p className="text-gray-700 dark:text-slate-300 leading-relaxed mt-4 break-words">{mushroomInfo.descripcionGeneral}</p>
                     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-                        <div className="p-4 bg-green-50 dark:bg-emerald-900/40 rounded-lg"><Icon name="globe" className="w-8 h-8 text-green-600 dark:text-emerald-500 mx-auto mb-2" /><h4 className="font-semibold text-sm text-green-800 dark:text-emerald-300">{t('habitat')}</h4><p className="text-sm text-gray-600 dark:text-slate-400 break-words">{mushroomInfo.habitat}</p></div>
-                        <div className="p-4 bg-green-50 dark:bg-emerald-900/40 rounded-lg"><Icon name="sparkles" className="w-8 h-8 text-green-600 dark:text-emerald-500 mx-auto mb-2" /><h4 className="font-semibold text-sm text-green-800 dark:text-emerald-300">{t('season')}</h4><p className="text-sm text-gray-600 dark:text-slate-400 break-words">{mushroomInfo.temporada}</p></div>
+                        <div className="p-4 bg-stone-50 dark:bg-stone-900/40 rounded-lg"><Icon name="globe" className="w-8 h-8 text-amber-600 dark:text-amber-500 mx-auto mb-2" /><h4 className="font-semibold text-sm text-stone-800 dark:text-amber-300">{t('habitat')}</h4><p className="text-sm text-gray-600 dark:text-slate-400 break-words">{mushroomInfo.habitat}</p></div>
+                        <div className="p-4 bg-stone-50 dark:bg-stone-900/40 rounded-lg"><Icon name="sparkles" className="w-8 h-8 text-amber-600 dark:text-amber-500 mx-auto mb-2" /><h4 className="font-semibold text-sm text-stone-800 dark:text-amber-300">{t('season')}</h4><p className="text-sm text-gray-600 dark:text-slate-400 break-words">{mushroomInfo.temporada}</p></div>
                     </div>
                 </div>
             </div>
-            <div className="mt-8 border-t border-green-200 dark:border-emerald-800 pt-2">
+            <div className="mt-8 border-t border-amber-200 dark:border-stone-800 pt-2">
               <Section title={t('toxicity')} icon="cross">
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
@@ -447,8 +447,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                 {mushroomInfo.recetas.map((recipe, i) => (
                   <div key={i} className="mb-6 p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/50">
                     <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-bold text-lg text-green-800 dark:text-emerald-300 break-words">{recipe.nombre}</h4>
-                        <button onClick={() => handleShareRecipe(recipe)} className={`hide-on-export inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${ sharedRecipe === recipe.nombre ? 'bg-blue-100 text-blue-800 focus:ring-blue-500 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`} disabled={sharedRecipe === recipe.nombre}><Icon name={sharedRecipe === recipe.nombre ? 'clipboard-check' : 'share-up'} className="w-3 h-3" />{sharedRecipe === recipe.nombre ? t('copied') : t('share')}</button>
+                        <h4 className="font-bold text-lg text-stone-800 dark:text-amber-300 break-words">{recipe.nombre}</h4>
+                        <button onClick={() => handleShareRecipe(recipe)} className={`hide-on-export inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${ sharedRecipe === recipe.nombre ? 'bg-blue-100 text-blue-800 focus:ring-blue-500 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`} disabled={sharedRecipe === recipe.nombre}><Icon name={sharedRecipe === recipe.nombre ? 'clipboard-check' : 'share-up'} className="w-3 h-3" />{sharedRecipe === recipe.nombre ? t('copied') : t('share')}</button>
                     </div>
                     <div className="mb-3"><h5 className="font-semibold text-gray-700 dark:text-slate-300">{t('ingredients')}:</h5><ul className="list-disc pl-5 text-gray-600 dark:text-slate-400">{recipe.ingredientes.map((ing, j) => <li key={j} className="break-words">{ing}</li>)}</ul></div>
                     <div className="mb-3"><h5 className="font-semibold text-gray-700 dark:text-slate-300">{t('instructions')}:</h5><p className="text-gray-600 dark:text-slate-400 break-words">{recipe.instrucciones}</p></div>
@@ -459,7 +459,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
               {sources.length > 0 && (<Section title={t('sources')} icon="link"><ul className="space-y-2">{sources.map((source, i) => (<li key={i}><a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-start gap-2"><span className="flex-shrink-0 pt-1"><Icon name="link" className="w-4 h-4" /></span><span className="truncate">{source.title}</span></a></li>))}</ul></Section>)}
             </div>
         </div>
-        <div className="p-6 bg-gray-50 dark:bg-slate-900/50 text-center"><button onClick={() => { onReset(); triggerHapticFeedback(); }} className="hide-on-export px-8 py-3 bg-green-600 dark:bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 dark:hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform transform hover:scale-105">{t('anotherQuery')}</button></div>
+        <div className="p-6 bg-gray-50 dark:bg-slate-900/50 text-center"><button onClick={() => { onReset(); triggerHapticFeedback(); }} className="hide-on-export px-8 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-transform transform hover:scale-105">{t('anotherQuery')}</button></div>
     </div>
     </>
   );
@@ -471,9 +471,9 @@ const HistoryModal: React.FC<{ isOpen: boolean; onClose: () => void; history: Hi
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center"><h2 className="text-2xl font-bold text-green-900 dark:text-emerald-200">{t('historyModalTitle')}</h2><button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center"><h2 className="text-2xl font-bold text-stone-900 dark:text-amber-200">{t('historyModalTitle')}</h2><button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
         <div className="overflow-y-auto p-2 flex-grow">
-          {history.length > 0 ? (<ul>{history.map((item) => { const title = item.mushroomInfo?.nombreComun || '...'; return (<li key={item.id}><button onClick={() => { onSelectItem(item); triggerHapticFeedback(); }} className="w-full text-left p-4 flex items-center gap-4 rounded-lg hover:bg-green-50 dark:hover:bg-emerald-900/50 transition-colors"><img src={item.imageSrc} alt={title} className="w-16 h-16 object-cover rounded-md shadow-sm flex-shrink-0" /><div className="flex-grow"><p className="font-semibold text-green-800 dark:text-emerald-300 flex items-center gap-2"><Icon name="mushroom" className="w-4 h-4 text-gray-400 dark:text-slate-500" /> {title}</p><p className="text-sm text-gray-500 dark:text-slate-400">{new Date(item.timestamp).toLocaleString()}</p></div></button></li>);})}</ul>) : (<div className="text-center p-10"><Icon name="history" className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" /><p className="text-gray-500 dark:text-slate-400">{t('noHistory')}</p></div>)}
+          {history.length > 0 ? (<ul>{history.map((item) => { const title = item.mushroomInfo?.nombreComun || '...'; return (<li key={item.id}><button onClick={() => { onSelectItem(item); triggerHapticFeedback(); }} className="w-full text-left p-4 flex items-center gap-4 rounded-lg hover:bg-amber-50 dark:hover:bg-stone-900/50 transition-colors"><img src={item.imageSrc} alt={title} className="w-16 h-16 object-cover rounded-md shadow-sm flex-shrink-0" /><div className="flex-grow"><p className="font-semibold text-stone-800 dark:text-amber-300 flex items-center gap-2"><Icon name="mushroom" className="w-4 h-4 text-gray-400 dark:text-slate-500" /> {title}</p><p className="text-sm text-gray-500 dark:text-slate-400">{new Date(item.timestamp).toLocaleString()}</p></div></button></li>);})}</ul>) : (<div className="text-center p-10"><Icon name="history" className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" /><p className="text-gray-500 dark:text-slate-400">{t('noHistory')}</p></div>)}
         </div>
         {history.length > 0 && (<div className="p-4 border-t border-gray-200 dark:border-slate-700 text-right"><button onClick={() => { triggerHapticFeedback(); if (window.confirm(t('clearHistoryConfirm'))) { onClearHistory();}}} className="px-4 py-2 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-semibold rounded-lg hover:bg-red-100 dark:hover:bg-red-900/80 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">{t('clearHistory')}</button></div>)}
       </div>
@@ -487,15 +487,15 @@ const CollectionModal: React.FC<{ isOpen: boolean; onClose: () => void; collecti
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center flex-shrink-0"><h2 className="text-2xl font-bold text-green-900 dark:text-emerald-200">{t('collectionModalTitle')}</h2><button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center flex-shrink-0"><h2 className="text-2xl font-bold text-stone-900 dark:text-amber-200">{t('collectionModalTitle')}</h2><button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex-shrink-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative"><span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><Icon name="search" className="w-5 h-5 text-gray-400" /></span><input type="text" placeholder={t('filterByName')} value={nameFilter} onChange={onNameFilterChange} className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:focus:ring-emerald-500 dark:text-slate-200"/></div>
-                <div className="md:col-span-1"><select value={sortOrder} onChange={onSortOrderChange} className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green-500 dark:focus:ring-emerald-500 dark:text-slate-200"><option value="date-desc">{t('sortDateDesc')}</option><option value="date-asc">{t('sortDateAsc')}</option><option value="name-asc">{t('sortNameAsc')}</option><option value="name-desc">{t('sortNameDesc')}</option></select></div>
+                <div className="relative"><span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><Icon name="search" className="w-5 h-5 text-gray-400" /></span><input type="text" placeholder={t('filterByName')} value={nameFilter} onChange={onNameFilterChange} className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-slate-200"/></div>
+                <div className="md:col-span-1"><select value={sortOrder} onChange={onSortOrderChange} className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-slate-200"><option value="date-desc">{t('sortDateDesc')}</option><option value="date-asc">{t('sortDateAsc')}</option><option value="name-asc">{t('sortNameAsc')}</option><option value="name-desc">{t('sortNameDesc')}</option></select></div>
             </div>
         </div>
         <div className="overflow-y-auto p-2 flex-grow">
-          {collection.length > 0 ? (<ul>{collection.map((item) => { const title = item.mushroomInfo?.nombreComun || '...'; return (<li key={item.id} className="p-2 flex items-center gap-2 group"><button onClick={() => { onSelectItem(item); triggerHapticFeedback(); }} className="w-full text-left flex items-center gap-4 rounded-lg hover:bg-green-50 dark:hover:bg-emerald-900/50 transition-colors p-2 flex-grow"><img src={item.imageSrc} alt={title} className="w-16 h-16 object-cover rounded-md shadow-sm flex-shrink-0" /><div className="flex-grow"><p className="font-semibold text-green-800 dark:text-emerald-300 flex items-center gap-2"><Icon name="mushroom" className="w-4 h-4 text-gray-400 dark:text-slate-500" /> {title}</p><p className="text-sm text-gray-500 dark:text-slate-400">{new Date(item.timestamp).toLocaleDateString()}</p></div></button><button onClick={(e) => { e.stopPropagation(); onStartCompare(item); triggerHapticFeedback(); }} className="p-2 rounded-full text-gray-400 dark:text-slate-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" aria-label={t('compare')}><Icon name="compare" className="w-5 h-5" /></button><button onClick={(e) => { e.stopPropagation(); onRemoveItem(item.id); triggerHapticFeedback(); }} className="p-2 rounded-full text-gray-400 dark:text-slate-500 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" aria-label={t('removeFromCollection')}><Icon name="trash" className="w-5 h-5" /></button></li>);})}</ul>) : (<div className="text-center p-10"><Icon name="book" className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" /><p className="text-gray-500 dark:text-slate-400">{t('noCollection')}</p></div>)}
+          {collection.length > 0 ? (<ul>{collection.map((item) => { const title = item.mushroomInfo?.nombreComun || '...'; return (<li key={item.id} className="p-2 flex items-center gap-2 group"><button onClick={() => { onSelectItem(item); triggerHapticFeedback(); }} className="w-full text-left flex items-center gap-4 rounded-lg hover:bg-amber-50 dark:hover:bg-stone-900/50 transition-colors p-2 flex-grow"><img src={item.imageSrc} alt={title} className="w-16 h-16 object-cover rounded-md shadow-sm flex-shrink-0" /><div className="flex-grow"><p className="font-semibold text-stone-800 dark:text-amber-300 flex items-center gap-2"><Icon name="mushroom" className="w-4 h-4 text-gray-400 dark:text-slate-500" /> {title}</p><p className="text-sm text-gray-500 dark:text-slate-400">{new Date(item.timestamp).toLocaleDateString()}</p></div></button><button onClick={(e) => { e.stopPropagation(); onStartCompare(item); triggerHapticFeedback(); }} className="p-2 rounded-full text-gray-400 dark:text-slate-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" aria-label={t('compare')}><Icon name="compare" className="w-5 h-5" /></button><button onClick={(e) => { e.stopPropagation(); onRemoveItem(item.id); triggerHapticFeedback(); }} className="p-2 rounded-full text-gray-400 dark:text-slate-500 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" aria-label={t('removeFromCollection')}><Icon name="trash" className="w-5 h-5" /></button></li>);})}</ul>) : (<div className="text-center p-10"><Icon name="book" className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" /><p className="text-gray-500 dark:text-slate-400">{t('noCollection')}</p></div>)}
         </div>
         {collection.length > 0 && (<div className="p-4 border-t border-gray-200 dark:border-slate-700 text-right flex-shrink-0"><button onClick={() => { onExport(); triggerHapticFeedback(); }} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">{t('exportToJson')}</button></div>)}
       </div>
@@ -690,8 +690,8 @@ function App() {
         }
         if (image) return (
         <div className="text-center p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg max-w-md">
-            <img src={image.src} alt="Selected Mushroom" className="max-h-64 w-auto mx-auto rounded-lg shadow-md mb-6" /><h3 className="text-xl font-bold text-green-900 dark:text-emerald-200 mb-6">{t('readyToAnalyze')}</h3>
-            <div className="flex justify-center gap-4"><button onClick={() => { setImage(null); triggerHapticFeedback(); }} className="px-6 py-3 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-semibold rounded-lg shadow-md border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600">{t('changePhoto')}</button><button onClick={() => { processImage(); triggerHapticFeedback(); }} className="px-6 py-3 bg-green-600 dark:bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 dark:hover:bg-emerald-700">{t('analyze')}</button></div>
+            <img src={image.src} alt="Selected Mushroom" className="max-h-64 w-auto mx-auto rounded-lg shadow-md mb-6" /><h3 className="text-xl font-bold text-stone-900 dark:text-amber-200 mb-6">{t('readyToAnalyze')}</h3>
+            <div className="flex justify-center gap-4"><button onClick={() => { setImage(null); triggerHapticFeedback(); }} className="px-6 py-3 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-semibold rounded-lg shadow-md border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600">{t('changePhoto')}</button><button onClick={() => { processImage(); triggerHapticFeedback(); }} className="px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700">{t('analyze')}</button></div>
         </div>
         );
         
@@ -699,9 +699,9 @@ function App() {
         <div className="flex flex-col items-center gap-4">
             <MainInput onImageSelect={handleImageSelect} isLoading={isLoading} onTextSearch={handleTextSearch} onError={setError} />
             <div className="flex flex-wrap justify-center items-center gap-4 mt-4">
-                {history.length > 0 && <button onClick={() => { setIsHistoryOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="history" className="w-5 h-5" />{t('history')}</button>}
-                {collection.length > 0 && <button onClick={() => { setIsCollectionOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="book" className="w-5 h-5" />{t('myCollection')}</button>}
-                <button onClick={() => { setIsManualOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60">
+                {history.length > 0 && <button onClick={() => { setIsHistoryOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="history" className="w-5 h-5" />{t('history')}</button>}
+                {collection.length > 0 && <button onClick={() => { setIsCollectionOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="book" className="w-5 h-5" />{t('myCollection')}</button>}
+                <button onClick={() => { setIsManualOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60">
                     <Icon name="help" className="w-5 h-5" />
                     {t('appManual')}
                 </button>
@@ -747,24 +747,24 @@ function App() {
         };
 
         return (
-            <div className="w-full max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden my-8 border border-green-200 dark:border-emerald-800 p-6 sm:p-8">
-                <h2 className="text-3xl font-bold text-center text-green-900 dark:text-emerald-200 mb-6">{t('comparatorTitle')}</h2>
+            <div className="w-full max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden my-8 border border-amber-200 dark:border-stone-800 p-6 sm:p-8">
+                <h2 className="text-3xl font-bold text-center text-stone-900 dark:text-amber-200 mb-6">{t('comparatorTitle')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 items-start">
-                    <div className="text-center p-4 border border-gray-200 dark:border-slate-700 rounded-lg"><img src={mushroomA.imageSrc} alt={mushroomA.mushroomInfo.nombreComun} className="w-32 h-32 object-cover rounded-full mx-auto mb-4 shadow-lg" /><h3 className="font-bold text-xl text-green-800 dark:text-emerald-300">{mushroomA.mushroomInfo.nombreComun}</h3><p className="text-sm italic text-gray-500 dark:text-slate-400">{mushroomA.mushroomInfo.nombreCientifico}</p></div>
-                    <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">{comparisonMushrooms.mushroomB ? (<div className="text-center"><img src={comparisonMushrooms.mushroomB.imageSrc} alt={comparisonMushrooms.mushroomB.mushroomInfo?.nombreComun} className="w-32 h-32 object-cover rounded-full mx-auto mb-4 shadow-lg" /><h3 className="font-bold text-xl text-green-800 dark:text-emerald-300">{comparisonMushrooms.mushroomB.mushroomInfo?.nombreComun}</h3><p className="text-sm italic text-gray-500 dark:text-slate-400">{comparisonMushrooms.mushroomB.mushroomInfo?.nombreCientifico}</p></div>) : (<div className="text-center"><h3 className="font-bold text-xl mb-4 text-gray-700 dark:text-slate-300">{t('selectMushroomB')}</h3><SearchInput onSearch={handleComparisonSearch} isLoading={isLoading} /></div>)}</div>
+                    <div className="text-center p-4 border border-gray-200 dark:border-slate-700 rounded-lg"><img src={mushroomA.imageSrc} alt={mushroomA.mushroomInfo.nombreComun} className="w-32 h-32 object-cover rounded-full mx-auto mb-4 shadow-lg" /><h3 className="font-bold text-xl text-stone-800 dark:text-amber-300">{mushroomA.mushroomInfo.nombreComun}</h3><p className="text-sm italic text-gray-500 dark:text-slate-400">{mushroomA.mushroomInfo.nombreCientifico}</p></div>
+                    <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">{comparisonMushrooms.mushroomB ? (<div className="text-center"><img src={comparisonMushrooms.mushroomB.imageSrc} alt={comparisonMushrooms.mushroomB.mushroomInfo?.nombreComun} className="w-32 h-32 object-cover rounded-full mx-auto mb-4 shadow-lg" /><h3 className="font-bold text-xl text-stone-800 dark:text-amber-300">{comparisonMushrooms.mushroomB.mushroomInfo?.nombreComun}</h3><p className="text-sm italic text-gray-500 dark:text-slate-400">{comparisonMushrooms.mushroomB.mushroomInfo?.nombreCientifico}</p></div>) : (<div className="text-center"><h3 className="font-bold text-xl mb-4 text-gray-700 dark:text-slate-300">{t('selectMushroomB')}</h3><SearchInput onSearch={handleComparisonSearch} isLoading={isLoading} /></div>)}</div>
                 </div>
-                <div className="text-center mb-8"><button onClick={() => { handleGenerateComparison(); triggerHapticFeedback(); }} disabled={!comparisonMushrooms.mushroomB || isLoading} className="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-transform transform hover:scale-105"><div className="flex items-center gap-3"><Icon name="compare" className="w-6 h-6" /><span>{isLoading && !comparisonResult ? t('generating') : t('generateComparison')}</span></div></button></div>
+                <div className="text-center mb-8"><button onClick={() => { handleGenerateComparison(); triggerHapticFeedback(); }} disabled={!comparisonMushrooms.mushroomB || isLoading} className="px-8 py-4 bg-amber-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-amber-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-transform transform hover:scale-105"><div className="flex items-center gap-3"><Icon name="compare" className="w-6 h-6" /><span>{isLoading && !comparisonResult ? t('generating') : t('generateComparison')}</span></div></button></div>
                 {isLoading && !comparisonResult && <Loader message={t('generatingComparison')} subMessage="" />}
                 {error && <p className="text-red-500 text-center p-4 bg-red-100 dark:bg-red-900/50 rounded-lg">{error}</p>}
                 {comparisonResult && (
                     <div className="space-y-6 mt-8 border-t border-gray-200 dark:border-slate-700 pt-8">
                         <div>
                             <h3 className="text-2xl font-bold mb-4 text-center">{t('comparativeAnalysis')}</h3>
-                            <p className="mb-6 bg-green-50 dark:bg-emerald-900/40 p-4 rounded-lg text-gray-700 dark:text-slate-300">{comparisonResult.resumenComparativo}</p>
+                            <p className="mb-6 bg-stone-50 dark:bg-stone-900/40 p-4 rounded-lg text-gray-700 dark:text-slate-300">{comparisonResult.resumenComparativo}</p>
                         </div>
                         
                         <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
-                            <h4 className="font-bold text-lg mb-3 flex items-center gap-2"><Icon name="utensils" className="w-5 h-5 text-green-600 dark:text-emerald-500" />{t('culinaryUses')}</h4>
+                            <h4 className="font-bold text-lg mb-3 flex items-center gap-2"><Icon name="utensils" className="w-5 h-5 text-amber-600 dark:text-amber-500" />{t('culinaryUses')}</h4>
                             <div className="grid sm:grid-cols-2 gap-4 text-sm">
                                 <div><h5 className="font-semibold mb-2">{t('similarities')}</h5><ul className="list-disc pl-5 space-y-1">{comparisonResult.usosCulinarios.similitudes.length > 0 ? comparisonResult.usosCulinarios.similitudes.map((s,i) => <li key={i}>{s}</li>) : <li>-</li>}</ul></div>
                                 <div><h5 className="font-semibold mb-2">{t('differences')}</h5><ul className="list-disc pl-5 space-y-1">{comparisonResult.usosCulinarios.diferencias.length > 0 ? comparisonResult.usosCulinarios.diferencias.map((d,i) => <li key={i}>{d}</li>) : <li>-</li>}</ul></div>
@@ -781,7 +781,7 @@ function App() {
                         </div>
 
                         <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
-                             <h4 className="font-bold text-lg mb-3 flex items-center gap-2"><Icon name="mushroom" className="w-5 h-5 text-green-600 dark:text-emerald-500" />{t('morphologicalDifferences')}</h4>
+                             <h4 className="font-bold text-lg mb-3 flex items-center gap-2"><Icon name="mushroom" className="w-5 h-5 text-amber-600 dark:text-amber-500" />{t('morphologicalDifferences')}</h4>
                              <div className="grid sm:grid-cols-2 gap-4 text-sm">
                                 <div><h5 className="font-semibold mb-2">{t('habitat')}</h5><p>{comparisonResult.diferenciasMorfologicas.habitat}</p></div>
                                 <div><h5 className="font-semibold mb-2">{t('appearance')}</h5><p>{comparisonResult.diferenciasMorfologicas.apariencia}</p></div>
@@ -795,12 +795,12 @@ function App() {
     }
   
   return (
-    <main className="min-h-screen w-full bg-gradient-to-br from-emerald-100 via-green-100 to-lime-200 dark:from-slate-800 dark:via-emerald-950 dark:to-green-950 flex flex-col items-center justify-center p-4 overflow-y-auto relative">
+    <main className="min-h-screen w-full bg-gradient-to-br from-stone-200 via-amber-100 to-orange-100 dark:from-slate-900 dark:via-stone-900 dark:to-amber-950 flex flex-col items-center justify-center p-4 overflow-y-auto relative">
       {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
       <div className="absolute top-4 right-4 z-10">
         <div className="flex items-center bg-white/60 dark:bg-slate-800/60 rounded-full shadow-md">
-          <button onClick={() => { setLanguage('es'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'es' ? 'bg-green-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>ES</button>
-          <button onClick={() => { setLanguage('en'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'en' ? 'bg-green-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>EN</button>
+          <button onClick={() => { setLanguage('es'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'es' ? 'bg-amber-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>ES</button>
+          <button onClick={() => { setLanguage('en'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'en' ? 'bg-amber-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>EN</button>
         </div>
       </div>
       <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} onSave={handleReset} />
