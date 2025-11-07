@@ -1,0 +1,8 @@
+{
+  "name": "Identificador de Hongos IA",
+  "description": "Una aplicación para identificar hongos a partir de fotos, descubrir sus usos culinarios, comestibilidad, toxicidad y posibles confusiones.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
