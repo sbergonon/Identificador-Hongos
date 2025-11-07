@@ -47,6 +47,11 @@ export interface HistoryEntry {
   sources: GroundingSource[];
   mapaDistribucionSrc?: string;
   imageGenerationFailed?: boolean;
+  // Field Diary properties
+  personalNotes?: string;
+  location?: { latitude: number; longitude: number };
+  findingDate?: string; // YYYY-MM-DD
+  userPhotos?: string[]; // array of data URLs
 }
 
 export interface ComparisonInfo {

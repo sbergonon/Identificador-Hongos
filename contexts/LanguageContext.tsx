@@ -89,7 +89,26 @@ const esTranslations = {
   "checkOutMushroom": "Echa un vistazo a este hongo:",
   "identifiedWith": "identificado con",
   "morphologicalDifferences": "Diferencias Morfológicas",
-  "appearance": "Apariencia"
+  "appearance": "Apariencia",
+  "addToDiary": "Añadir al Diario de Campo",
+  "editDiary": "Editar Diario",
+  "fieldDiaryTitle": "Diario de Campo",
+  "fieldDiaryNotesLabel": "Notas Personales",
+  "fieldDiaryNotesPlaceholder": "Describe el entorno, olor, textura, etc.",
+  "fieldDiaryDateLabel": "Fecha del Hallazgo",
+  "fieldDiaryLocationLabel": "Ubicación",
+  "fieldDiaryLocationButton": "Obtener Ubicación Actual",
+  "fieldDiaryLocationGetting": "Obteniendo...",
+  "fieldDiaryLocationSet": "Ubicación guardada",
+  "fieldDiaryLocationError": "Error al obtener",
+  "fieldDiaryPhotosLabel": "Tus Fotos",
+  "fieldDiaryPhotosButton": "Subir Fotos",
+  "fieldDiarySaveButton": "Guardar en Diario",
+  "fieldDiaryUpdateButton": "Actualizar Diario",
+  "fieldDiaryCancelButton": "Cancelar",
+  "myFieldDiarySectionTitle": "Mi Diario de Campo",
+  "switchToDarkMode": "Cambiar a modo oscuro",
+  "switchToLightMode": "Cambiar a modo claro"
 };
 
 const enTranslations = {
@@ -181,7 +200,26 @@ const enTranslations = {
   "checkOutMushroom": "Check out this mushroom:",
   "identifiedWith": "identified with",
   "morphologicalDifferences": "Morphological Differences",
-  "appearance": "Appearance"
+  "appearance": "Appearance",
+  "addToDiary": "Add to Field Diary",
+  "editDiary": "Edit Diary",
+  "fieldDiaryTitle": "Field Diary",
+  "fieldDiaryNotesLabel": "Personal Notes",
+  "fieldDiaryNotesPlaceholder": "Describe the environment, smell, texture, etc.",
+  "fieldDiaryDateLabel": "Date of Finding",
+  "fieldDiaryLocationLabel": "Location",
+  "fieldDiaryLocationButton": "Get Current Location",
+  "fieldDiaryLocationGetting": "Getting...",
+  "fieldDiaryLocationSet": "Location Saved",
+  "fieldDiaryLocationError": "Failed to get",
+  "fieldDiaryPhotosLabel": "Your Photos",
+  "fieldDiaryPhotosButton": "Upload Photos",
+  "fieldDiarySaveButton": "Save to Diary",
+  "fieldDiaryUpdateButton": "Update Diary",
+  "fieldDiaryCancelButton": "Cancel",
+  "myFieldDiarySectionTitle": "My Field Diary",
+  "switchToDarkMode": "Switch to dark mode",
+  "switchToLightMode": "Switch to light mode"
 };
 
 type Language = 'es' | 'en';

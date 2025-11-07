@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { MushroomInfo, GroundingSource, HistoryEntry, Recipe, ComparisonInfo } from './types';
 import { identifyMushroomFromImage, identifyMushroomFromText, compareMushrooms } from './services/geminiService';
@@ -7,6 +6,7 @@ import { ApiKeyModal } from './components/ApiKeyModal';
 import { ManualModal } from './components/ManualModal';
 import { useApiKey } from './contexts/ApiKeyContext';
 import { useLanguage } from './contexts/LanguageContext';
+import { useTheme } from './contexts/ThemeContext';
 
 declare global {
   interface Window { jspdf: any; html2canvas: any; }
@@ -31,6 +31,8 @@ const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reje
   reader.onload = () => resolve((reader.result as string).split(',')[1]);
   reader.onerror = (error) => reject(error);
 });
+
+const dataUrlWithoutPrefix = (dataUrl: string): string => dataUrl.split(',')[1];
 
 const blobUrlToDataUrl = (blobUrl: string): Promise<string> => new Promise((resolve, reject) => {
   fetch(blobUrl).then(res => res.blob()).then(blob => {
@@ -248,10 +250,11 @@ interface ResultCardProps {
     isInCollection: boolean; 
     onToggleCollection: () => void; 
     onStartCompare?: () => void;
+    onEditDiary: () => void;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection, onToggleCollection, onStartCompare }) => {
-    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, imageGenerationFailed } = result;
+const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection, onToggleCollection, onStartCompare, onEditDiary }) => {
+    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, imageGenerationFailed, personalNotes, findingDate, location, userPhotos } = result;
     const { t } = useLanguage();
     const resultCardRef = useRef<HTMLDivElement>(null);
     const shareableCardRef = useRef<HTMLDivElement | null>(null);
@@ -262,7 +265,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
     if (!mushroomInfo) return null;
 
     const [sharedRecipe, setSharedRecipe] = useState<string | null>(null);
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ [t('toxicity')]: true, [t('similarMushrooms')]: true });
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ [t('symptoms')]: true, [t('similarMushrooms')]: true, [t('myFieldDiarySectionTitle')]: true });
 
     const toggleSection = (title: string) => setOpenSections(prev => ({...prev, [title]: !prev[title]}));
 
@@ -315,9 +318,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
             mapaDistribucionSrc ? t('distributionMap') : null,
             mushroomInfo.usosCulinarios?.length > 0 ? t('culinaryUses') : null,
             mushroomInfo.toxicidad ? t('toxicity') : null,
+            mushroomInfo.toxicidad.sintomas ? t('symptoms') : null,
             mushroomInfo.hongosSimilares?.length > 0 ? t('similarMushrooms') : null,
             mushroomInfo.recetas?.length > 0 ? t('recipes') : null,
             sources.length > 0 ? t('sources') : null,
+            isInCollection ? t('myFieldDiarySectionTitle') : null,
         ].filter(Boolean) as string[];
 
         const allOpenState = allPossibleSections.reduce((acc, title) => ({ ...acc, [title]: true }), {});
@@ -372,6 +377,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
         return <span className={`px-3 py-1 text-sm font-bold rounded-full ${color}`}>{t(textKey)}</span>;
     };
   
+  const hasDiaryData = personalNotes || findingDate || location || (userPhotos && userPhotos.length > 0);
+
   return (
     <>
     {showShareableCard && (
@@ -399,6 +406,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                         </button>
                         {onStartCompare && (<button onClick={() => { onStartCompare(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"><Icon name="compare" className="w-4 h-4" />{t('compare')}</button>)}
                         <button onClick={onToggleCollection} className={`hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${ isInCollection ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`}><Icon name="bookmark" className="w-4 h-4" />{isInCollection ? t('saved') : t('save')}</button>
+                        {isInCollection && (<button onClick={() => { onEditDiary(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-100 text-blue-800 hover:bg-blue-200 focus:ring-blue-500 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70"><Icon name="pencil" className="w-4 h-4" />{t('editDiary')}</button>)}
                         <button onClick={handleExportPdf} disabled={isExporting} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
                             {isExporting ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="download" className="w-4 h-4" />}
                             {isExporting ? t('exporting') : t('exportToPdf')}
@@ -415,6 +423,16 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                 </div>
             </div>
             <div className="mt-8 border-t border-amber-200 dark:border-stone-800 pt-2">
+              {isInCollection && hasDiaryData && (
+                <Section title={t('myFieldDiarySectionTitle')} icon="book">
+                    <div className="space-y-4">
+                        {findingDate && (<div className="flex items-center gap-3"><Icon name="calendar" className="w-5 h-5 text-gray-500 dark:text-slate-400"/><p><strong>{t('fieldDiaryDateLabel')}:</strong> {new Date(findingDate).toLocaleDateString()}</p></div>)}
+                        {location && (<div className="flex items-center gap-3"><Icon name="location-pin" className="w-5 h-5 text-gray-500 dark:text-slate-400"/> <p><strong>{t('fieldDiaryLocationLabel')}:</strong> <a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</a></p> </div>)}
+                        {personalNotes && (<div><h4 className="font-semibold mb-1">{t('fieldDiaryNotesLabel')}:</h4><p className="whitespace-pre-wrap bg-stone-50 dark:bg-stone-900/40 p-3 rounded-md">{personalNotes}</p></div>)}
+                        {userPhotos && userPhotos.length > 0 && (<div><h4 className="font-semibold mb-2">{t('fieldDiaryPhotosLabel')}:</h4><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">{userPhotos.map((photo, i) => <img key={i} src={photo} alt={`${t('userPhoto')} ${i+1}`} className="w-full h-auto object-cover rounded-md shadow-sm" />)}</div></div>)}
+                    </div>
+                </Section>
+              )}
               <Section title={t('toxicity')} icon="cross">
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
@@ -423,13 +441,17 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                     </div>
                     <p className="bg-yellow-100 dark:bg-yellow-900/40 border-l-4 border-yellow-500 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300 p-4 rounded-r-lg break-words">{mushroomInfo.toxicidad.descripcion}</p>
                     {mushroomInfo.toxicidad.compuestosToxicos.length > 0 && (<div><h4 className="font-semibold text-gray-800 dark:text-slate-200 mb-1">{t('toxicCompounds')}:</h4><ul className="list-disc pl-5 text-sm space-y-1">{mushroomInfo.toxicidad.compuestosToxicos.map((c, i) => <li key={i} className="break-words">{c}</li>)}</ul></div>)}
-                    {mushroomInfo.toxicidad.sintomas && (<div><h4 className="font-semibold text-gray-800 dark:text-slate-200 mb-1">{t('symptoms')}:</h4><p className="text-sm">{mushroomInfo.toxicidad.sintomas}</p></div>)}
-                    <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg">
-                        <h4 className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><Icon name="cross" className="w-5 h-5" />{t('firstAid')}</h4>
-                        <p className="mt-2 text-red-700 dark:text-red-300 text-sm break-words">{mushroomInfo.toxicidad.primerosAuxilios}</p>
-                    </div>
                 </div>
               </Section>
+              {mushroomInfo.toxicidad.sintomas && (
+                <Section title={t('symptoms')} icon="cross">
+                  <p className="break-words whitespace-pre-wrap">{mushroomInfo.toxicidad.sintomas}</p>
+                </Section>
+              )}
+               <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg">
+                  <h4 className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><Icon name="cross" className="w-5 h-5" />{t('firstAid')}</h4>
+                  <p className="mt-2 text-red-700 dark:text-red-300 text-sm break-words">{mushroomInfo.toxicidad.primerosAuxilios}</p>
+              </div>
               {mushroomInfo.hongosSimilares?.length > 0 && (
                 <Section title={t('similarMushrooms')} icon="cross">
                     <div className="space-y-4">{mushroomInfo.hongosSimilares.map((similar, i) => (
@@ -503,6 +525,126 @@ const CollectionModal: React.FC<{ isOpen: boolean; onClose: () => void; collecti
   );
 };
 
+// --- FIELD DIARY MODAL ---
+interface FieldDiaryModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (diaryData: Partial<HistoryEntry>) => void;
+    entry: HistoryEntry | null;
+}
+
+const FieldDiaryModal: React.FC<FieldDiaryModalProps> = ({ isOpen, onClose, onSave, entry }) => {
+    const { t } = useLanguage();
+    const [notes, setNotes] = useState('');
+    const [date, setDate] = useState('');
+    const [location, setLocation] = useState<HistoryEntry['location'] | null>(null);
+    const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [photos, setPhotos] = useState<string[]>([]);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (entry) {
+            setNotes(entry.personalNotes || '');
+            setDate(entry.findingDate || new Date().toISOString().split('T')[0]);
+            setLocation(entry.location || null);
+            setLocationStatus(entry.location ? 'success' : 'idle');
+            setPhotos(entry.userPhotos || []);
+        }
+    }, [entry]);
+
+    if (!isOpen || !entry) return null;
+
+    const handleGetLocation = () => {
+        setLocationStatus('loading');
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+                setLocationStatus('success');
+            },
+            () => {
+                setLocationStatus('error');
+            }, { timeout: 10000, enableHighAccuracy: true }
+        );
+    };
+
+    const handlePhotoSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+        
+        const newPhotosPromises = Array.from(files).map(file => createThumbnail(URL.createObjectURL(file), 800));
+        const newPhotosDataUrls = await Promise.all(newPhotosPromises);
+        
+        setPhotos(prev => [...prev, ...newPhotosDataUrls].slice(0, 10)); // Limit to 10 photos
+    };
+
+    const handleRemovePhoto = (index: number) => {
+        setPhotos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSave = () => {
+        onSave({
+            personalNotes: notes,
+            findingDate: date,
+            location: location || undefined,
+            userPhotos: photos,
+        });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center flex-shrink-0">
+                    <h2 className="text-2xl font-bold text-stone-900 dark:text-amber-200 flex items-center gap-3"><Icon name="book" className="w-7 h-7" />{t('fieldDiaryTitle')}</h2>
+                    <button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                </div>
+                <div className="overflow-y-auto p-6 space-y-6 flex-grow">
+                    <div>
+                        <label className="flex items-center gap-2 text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2"><Icon name="pencil" className="w-5 h-5"/>{t('fieldDiaryNotesLabel')}</label>
+                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('fieldDiaryNotesPlaceholder')} rows={4} className="w-full p-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-slate-200"></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="flex items-center gap-2 text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2"><Icon name="calendar" className="w-5 h-5"/>{t('fieldDiaryDateLabel')}</label>
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-slate-200"/>
+                        </div>
+                        <div>
+                            <label className="flex items-center gap-2 text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2"><Icon name="location-pin" className="w-5 h-5"/>{t('fieldDiaryLocationLabel')}</label>
+                            <button onClick={handleGetLocation} disabled={locationStatus === 'loading'} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
+                                {locationStatus === 'loading' && <><span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> {t('fieldDiaryLocationGetting')}</>}
+                                {locationStatus === 'success' && <><Icon name="location-pin" className="w-4 h-4 text-green-500"/>{t('fieldDiaryLocationSet')}: {location?.latitude.toFixed(4)}, {location?.longitude.toFixed(4)}</>}
+                                {locationStatus === 'error' && <><Icon name="cross" className="w-4 h-4 text-red-500"/>{t('fieldDiaryLocationError')}</>}
+                                {locationStatus === 'idle' && <>{t('fieldDiaryLocationButton')}</>}
+                            </button>
+                        </div>
+                    </div>
+                     <div>
+                        <label className="flex items-center gap-2 text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2"><Icon name="photo" className="w-5 h-5"/>{t('fieldDiaryPhotosLabel')}</label>
+                        <input type="file" accept="image/*" multiple ref={photoInputRef} onChange={handlePhotoSelection} className="hidden" />
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                           {photos.map((photo, index) => (
+                               <div key={index} className="relative group aspect-square">
+                                   <img src={photo} className="w-full h-full object-cover rounded-md" />
+                                   <button onClick={() => handleRemovePhoto(index)} className="absolute top-0 right-0 m-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" className="w-4 h-4"/></button>
+                               </div>
+                           ))}
+                           {photos.length < 10 && (
+                                <button onClick={() => photoInputRef.current?.click()} className="flex items-center justify-center w-full aspect-square border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700">
+                                    <Icon name="upload" className="w-8 h-8 text-gray-400 dark:text-slate-500" />
+                                </button>
+                           )}
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 border-t border-gray-200 dark:border-slate-700 text-right flex-shrink-0 flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-slate-600 text-gray-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-slate-500">{t('fieldDiaryCancelButton')}</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700">{t('fieldDiaryUpdateButton')}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- MAIN APP COMPONENT ---
 
 function App() {
@@ -521,9 +663,12 @@ function App() {
   const [comparisonMushrooms, setComparisonMushrooms] = useState<{ mushroomA: HistoryEntry | null, mushroomB: HistoryEntry | null }>({ mushroomA: null, mushroomB: null });
   const [comparisonResult, setComparisonResult] = useState<ComparisonInfo | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [isFieldDiaryOpen, setIsFieldDiaryOpen] = useState(false);
+  const [editingDiaryEntry, setEditingDiaryEntry] = useState<HistoryEntry | null>(null);
   
   const { effectiveApiKey } = useApiKey();
   const { t, language, setLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const [collectionSortOrder, setCollectionSortOrder] = useState('date-desc');
   const [collectionNameFilter, setCollectionNameFilter] = useState('');
@@ -643,13 +788,45 @@ function App() {
               const finalEntry = { ...currentResult, imageSrc: thumbImageSrc, mapaDistribucionSrc: thumbMapSrc };
               saveCollection([finalEntry, ...collection]);
               setNotification(t('savedToCollection'));
+              // Open diary modal right after saving for the first time
+              setEditingDiaryEntry(finalEntry);
+              setIsFieldDiaryOpen(true);
+
           } catch (err: any) {
               console.error("Could not create thumbnail for collection:", err);
               saveCollection([currentResult, ...collection]);
               setNotification(t('savedToCollection'));
+              setEditingDiaryEntry(currentResult);
+              setIsFieldDiaryOpen(true);
           }
       }
   };
+
+    const handleEditDiary = () => {
+        if (currentResult) {
+            // Find the latest version from the collection state
+            const collectionVersion = collection.find(c => c.id === currentResult.id);
+            setEditingDiaryEntry(collectionVersion || currentResult);
+            setIsFieldDiaryOpen(true);
+        }
+    };
+    
+    const handleSaveDiary = (diaryData: Partial<HistoryEntry>) => {
+        if (!editingDiaryEntry) return;
+
+        const updatedCollection = collection.map(entry => 
+            entry.id === editingDiaryEntry.id
+                ? { ...entry, ...diaryData }
+                : entry
+        );
+        saveCollection(updatedCollection);
+
+        // Also update currentResult if it's being displayed
+        if (currentResult && currentResult.id === editingDiaryEntry.id) {
+            setCurrentResult(prev => prev ? { ...prev, ...diaryData } : null);
+        }
+    };
+
 
   const handleRemoveFromCollection = (id: string) => saveCollection(collection.filter(entry => entry.id !== id));
   const handleCloseCollection = () => { setIsCollectionOpen(false); setCollectionNameFilter(''); setCollectionSortOrder('date-desc'); };
@@ -671,7 +848,13 @@ function App() {
         name: entry.mushroomInfo?.nombreComun, 
         scientificName: entry.mushroomInfo?.nombreCientifico, 
         savedDate: new Date(entry.timestamp).toISOString(), 
-        summary: `Edibility: ${entry.mushroomInfo?.toxicidad.nivelToxicidad}. Habitat: ${entry.mushroomInfo?.habitat}`
+        summary: `Edibility: ${entry.mushroomInfo?.toxicidad.nivelToxicidad}. Habitat: ${entry.mushroomInfo?.habitat}`,
+        diary: {
+            notes: entry.personalNotes,
+            date: entry.findingDate,
+            location: entry.location,
+            photosCount: entry.userPhotos?.length || 0
+        }
     }));
     const jsonString = JSON.stringify(exportData, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `mushroom_collection_export_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
   }, [filteredAndSortedCollection]);
@@ -686,7 +869,10 @@ function App() {
         );
         if (currentResult) {
             const isInCollection = collection.some(entry => entry.id === currentResult.id);
-            return <ResultCard result={currentResult} onReset={handleReset} isInCollection={isInCollection} onToggleCollection={handleToggleCollection} onStartCompare={() => handleStartCompare(currentResult)} />;
+            // Ensure the currentResult has the latest diary data from the collection
+            const collectionVersion = collection.find(c => c.id === currentResult.id);
+            const displayResult = collectionVersion || currentResult;
+            return <ResultCard result={displayResult} onReset={handleReset} isInCollection={isInCollection} onToggleCollection={handleToggleCollection} onStartCompare={() => handleStartCompare(currentResult)} onEditDiary={handleEditDiary} />;
         }
         if (image) return (
         <div className="text-center p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg max-w-md">
@@ -797,16 +983,25 @@ function App() {
   return (
     <main className="min-h-screen w-full bg-gradient-to-br from-stone-200 via-amber-100 to-orange-100 dark:from-slate-900 dark:via-stone-900 dark:to-amber-950 flex flex-col items-center justify-center p-4 overflow-y-auto relative">
       {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         <div className="flex items-center bg-white/60 dark:bg-slate-800/60 rounded-full shadow-md">
           <button onClick={() => { setLanguage('es'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'es' ? 'bg-amber-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>ES</button>
           <button onClick={() => { setLanguage('en'); triggerHapticFeedback(); }} className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${language === 'en' ? 'bg-amber-600 text-white' : 'text-gray-700 dark:text-slate-300'}`}>EN</button>
         </div>
+        <button
+          onClick={() => { toggleTheme(); triggerHapticFeedback(); }}
+          className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-full shadow-md text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+          aria-label={theme === 'light' ? t('switchToDarkMode') : t('switchToLightMode')}
+        >
+          <Icon name={theme === 'light' ? 'moon' : 'sun'} className="w-5 h-5" />
+        </button>
       </div>
       <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} onSave={handleReset} />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={history} onSelectItem={handleViewHistoryItem} onClearHistory={() => saveHistory([])} />
       <CollectionModal isOpen={isCollectionOpen} onClose={handleCloseCollection} collection={filteredAndSortedCollection} onSelectItem={handleViewHistoryItem} onRemoveItem={handleRemoveFromCollection} onExport={handleExportCollection} sortOrder={collectionSortOrder} onSortOrderChange={(e) => setCollectionSortOrder(e.target.value)} nameFilter={collectionNameFilter} onNameFilterChange={(e) => setCollectionNameFilter(e.target.value)} onStartCompare={handleStartCompare} />
       <ManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
+      <FieldDiaryModal isOpen={isFieldDiaryOpen} onClose={() => setIsFieldDiaryOpen(false)} onSave={handleSaveDiary} entry={editingDiaryEntry} />
+
       {view === 'main' ? renderMainView() : renderComparatorView()}
     </main>
   );

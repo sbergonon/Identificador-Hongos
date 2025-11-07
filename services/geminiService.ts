@@ -1,4 +1,5 @@
-import { GoogleGenAI, GroundingChunk, Modality } from "@google/genai";
+
+import { GoogleGenAI, GroundingChunk } from "@google/genai";
 import { MushroomInfo, GroundingSource, Recipe, SimilarMushroom, ComparisonInfo, ToxicityInfo } from '../types';
 
 const getAiClient = (apiKey: string): GoogleGenAI => {
@@ -100,7 +101,17 @@ function sanitizeMushroomInfo(data: any): MushroomInfo | null {
         descripcion: String(toxData.descripcion || 'No information available.'),
         nivelToxicidad: ['Edible', 'Inedible', 'Caution', 'Poisonous', 'Lethal'].includes(toxData.nivelToxicidad) ? toxData.nivelToxicidad : 'Caution',
         compuestosToxicos: Array.isArray(toxData.compuestosToxicos) ? toxData.compuestosToxicos.filter((c: any) => typeof c === 'string') : [],
-        sintomas: String(toxData.sintomas || 'Symptoms not specified.'),
+        sintomas: (() => {
+            const symptoms = toxData.sintomas;
+            if (!symptoms) return 'Symptoms not specified.';
+            if (typeof symptoms === 'string') return symptoms;
+            if (typeof symptoms === 'object' && !Array.isArray(symptoms)) {
+                return Object.entries(symptoms)
+                    .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${Array.isArray(value) ? value.join(', ') : String(value)}`)
+                    .join('\n');
+            }
+            return String(symptoms);
+        })(),
         primerosAuxilios: String(toxData.primerosAuxilios || 'In case of ingestion, seek immediate medical attention.'),
     };
 
@@ -207,18 +218,22 @@ async function generateDistributionMap(apiKey: string, mushroomInfo: MushroomInf
     try {
         const ai = getAiClient(apiKey);
         const prompt_text = language === 'es' 
-            ? `Mapa del mundo estilo atlas que muestra la distribución geográfica de ${mushroomInfo.nombreCientifico}. Descripción: "${mushroomInfo.distribucionGeografica}". Resalta claramente las áreas mencionadas.`
-            : `Atlas-style world map showing the geographic distribution of ${mushroomInfo.nombreCientifico}. Description: "${mushroomInfo.distribucionGeografica}". Clearly highlight the mentioned areas on the map.`;
+            ? `Tarea: Generar un mapa de distribución geográfica. Sujeto: El hongo *${mushroomInfo.nombreCientifico}*. Datos de origen para la distribución: "${mushroomInfo.distribucionGeografica}". Requisitos: Estilo de mapa de atlas, limpio y profesional. Resalta claramente las regiones geográficas mencionadas en los datos de origen. Incluye etiquetas para continentes y océanos. El mapa debe ser visualmente claro y priorizar la precisión informativa sobre el estilo artístico.`
+            : `Task: Generate a geographic distribution map. Subject: The mushroom *${mushroomInfo.nombreCientifico}*. Source data for distribution: "${mushroomInfo.distribucionGeografica}". Requirements: Clean, professional atlas map style. Clearly highlight the geographic regions mentioned in the source data. Include labels for continents and oceans. The map must be visually clear and prioritize informational accuracy over artistic style.`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt_text }] },
-            config: { responseModalities: [Modality.IMAGE] },
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt_text,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '16:9',
+            },
         });
 
-        const part = response.candidates?.[0]?.content?.parts?.[0];
-        if (part?.inlineData) {
-            return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
         }
         return null;
     } catch (error) {
@@ -231,18 +246,22 @@ async function generateMushroomImage(apiKey: string, mushroomInfo: MushroomInfo,
     try {
         const ai = getAiClient(apiKey);
         const prompt_text = language === 'es'
-            ? `Fotografía realista y detallada del hongo ${mushroomInfo.nombreComun} (${mushroomInfo.nombreCientifico}) en su hábitat natural. Descripción: "${mushroomInfo.descripcionGeneral}".`
-            : `Realistic and detailed photograph of the mushroom ${mushroomInfo.nombreComun} (${mushroomInfo.nombreCientifico}) in its natural habitat. Description: "${mushroomInfo.descripcionGeneral}".`;
+            ? `Una fotografía de estudio, fotorrealista y micológicamente precisa del hongo *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}). La imagen debe ser de alta calidad, mostrando los detalles morfológicos correctos de la especie, sobre un fondo blanco neutro.`
+            : `A photorealistic, mycologically accurate, studio photograph of the mushroom *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}). The image must be high-quality, showing the correct morphological details of the species, on a neutral white background.`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt_text }] },
-            config: { responseModalities: [Modality.IMAGE] },
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt_text,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '1:1',
+            },
         });
         
-        const part = response.candidates?.[0]?.content?.parts?.[0];
-        if (part?.inlineData) {
-            return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
         }
         return null;
     } catch (error) {
