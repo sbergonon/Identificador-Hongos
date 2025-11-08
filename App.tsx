@@ -807,6 +807,9 @@ function App() {
     let displayMessage = '';
 
     switch (errorCode) {
+        case 'SERVICE_CONFIG_ERROR_API_KEY_MISSING':
+            displayMessage = t('error_service_config_api_key_missing');
+            break;
         case 'API_QUOTA':
             displayMessage = t('error_api_quota');
             break;
