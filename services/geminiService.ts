@@ -1,11 +1,16 @@
 import { GoogleGenAI, GroundingChunk, Modality } from "@google/genai";
 import { MushroomInfo, GroundingSource, Recipe, SimilarMushroom, ComparisonInfo, ToxicityInfo, ImageQuality } from '../types.ts';
 
-// Initialize the AI client once using the environment variable.
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set.");
-}
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper function to get a fresh AI client instance.
+// This prevents race conditions on startup in deployment environments.
+const getAiClient = () => {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        // This will be caught by handleApiError and translated to a user-friendly message.
+        throw new Error("API_KEY environment variable not set.");
+    }
+    return new GoogleGenAI({ apiKey });
+};
 
 
 type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Expert';
@@ -115,7 +120,7 @@ const handleApiError = (error: unknown) => {
     console.error("API call error:", error);
     if (error instanceof Error) {
         const message = error.message.toLowerCase();
-        if (message.includes('api key not valid')) {
+        if (message.includes('api key not valid') || message.includes('api_key environment variable not set')) {
             throw new Error("SERVICE_CONFIG_ERROR");
         }
         if (message.includes('429') || message.includes('resource has been exhausted')) {
@@ -227,6 +232,7 @@ function sanitizeComparisonInfo(data: any): ComparisonInfo | null {
 
 const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'es' | 'en', difficulty: DifficultyLevel): Promise<{ mushroomInfo: MushroomInfo; sources: GroundingSource[] }> => {
   try {
+    const ai = getAiClient();
     const textPart = { text: getMushroomJsonPrompt(parts.find(p => p.text).text, language, difficulty) };
     const imagePart = parts.find(p => p.inlineData);
     const finalParts = imagePart ? [imagePart, textPart] : [textPart];
@@ -271,6 +277,7 @@ async function generateDistributionMap(mushroomInfo: MushroomInfo, language: 'es
         return { data: null, isQuotaError: false };
     }
     try {
+        const ai = getAiClient();
         const highQualityPromptEs = `Tarea: Generar un mapa de distribución geográfica. Sujeto: El hongo *${mushroomInfo.nombreCientifico}*. Datos de origen para la distribución: "${mushroomInfo.distribucionGeografica}". Requisitos: Estilo de mapa de atlas, limpio y profesional. Resalta claramente las regiones geográficas mencionadas en los datos de origen. Incluye etiquetas para continentes y océanos. El mapa debe ser visualmente claro y priorizar la precisión informativa sobre el estilo artístico.`;
         const standardQualityPromptEs = `Tarea: Generar un mapa de distribución geográfica claro y legible del hongo *${mushroomInfo.nombreCientifico}*, basado en esta descripción: "${mushroomInfo.distribucionGeografica}".`;
         
@@ -314,6 +321,7 @@ async function generateDistributionMap(mushroomInfo: MushroomInfo, language: 'es
 
 async function generateMushroomImage(mushroomInfo: MushroomInfo, language: 'es' | 'en', imageQuality: ImageQuality): Promise<{ data: string | null; isQuotaError: boolean; }> {
     try {
+        const ai = getAiClient();
         const highQualityPromptEs = `Una fotografía de calidad de estudio, ultradetallada, 8k y fotorrealista del hongo *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}). La imagen debe ser micológicamente precisa, mostrando los detalles morfológicos correctos de la especie, sobre un fondo de estudio blanco y neutro.`;
         const standardQualityPromptEs = `Una fotografía clara y micológicamente precisa del hongo *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}) sobre un fondo neutro.`;
 
@@ -420,6 +428,7 @@ export const compareMushrooms = async (
     language: 'es' | 'en'
 ): Promise<ComparisonInfo> => {
     try {
+        const ai = getAiClient();
         const textPart = { text: getCompareMushroomPrompt(mushroomA, mushroomB, language) };
 
         const response = await ai.models.generateContent({
