@@ -1,7 +1,7 @@
 
 import React from 'react';
 // FIX: Use HistoryEntry and ToxicityInfo types which exist in the project.
-import type { HistoryEntry, ToxicityInfo } from '../types';
+import type { HistoryEntry, ToxicityInfo } from '../types.ts';
 
 interface ResultDisplayProps {
   // FIX: Use HistoryEntry instead of the non-existent IdentificationResult.

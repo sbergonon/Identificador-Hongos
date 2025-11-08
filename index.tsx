@@ -1,9 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { ApiKeyProvider } from './contexts/ApiKeyContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import App from './App.tsx';
+import { LanguageProvider } from './contexts/LanguageContext.tsx';
+import { ThemeProvider } from './contexts/ThemeContext.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,12 +12,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ApiKeyProvider>
-      <LanguageProvider>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </LanguageProvider>
-    </ApiKeyProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </LanguageProvider>
   </React.StrictMode>
 );

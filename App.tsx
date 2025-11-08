@@ -1,11 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { MushroomInfo, GroundingSource, HistoryEntry, Recipe, ComparisonInfo, ImageQuality } from './types';
-import { identifyMushroomFromImage, identifyMushroomFromText, compareMushrooms } from './services/geminiService';
-import { Icon } from './components/Icons';
-import { ManualModal } from './components/ManualModal';
-import { useLanguage } from './contexts/LanguageContext';
-import { useTheme } from './contexts/ThemeContext';
-import { imageToDataUrl, createPlaceholderImage } from './utils';
+import { MushroomInfo, GroundingSource, HistoryEntry, Recipe, ComparisonInfo, ImageQuality } from './types.ts';
+import { identifyMushroomFromImage, identifyMushroomFromText, compareMushrooms } from './services/geminiService.ts';
+import { Icon } from './components/Icons.tsx';
+import { ManualModal } from './components/ManualModal.tsx';
+import { useLanguage } from './contexts/LanguageContext.tsx';
+import { useTheme } from './contexts/ThemeContext.tsx';
+import { imageToDataUrl, createPlaceholderImage } from './utils.ts';
 
 declare global {
   interface Window { jspdf: any; html2canvas: any; }

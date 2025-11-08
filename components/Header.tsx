@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MushroomIcon } from './icons/MushroomIcon';
+import { MushroomIcon } from './icons/MushroomIcon.tsx';
 
 const Header: React.FC = () => {
   return (

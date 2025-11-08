@@ -46,7 +46,9 @@ export interface HistoryEntry {
   mushroomInfo: MushroomInfo;
   sources: GroundingSource[];
   mapaDistribucionSrc?: string;
-  imageGenerationFailed?: boolean;
+  mainImageGenerationFailed?: boolean;
+  mapGenerationFailed?: boolean;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Expert';
   // Field Diary properties
   personalNotes?: string;
   location?: { latitude: number; longitude: number };
@@ -70,3 +72,5 @@ export interface ComparisonInfo {
     apariencia: string;
   };
 }
+
+export type ImageQuality = 'Standard' | 'High';
