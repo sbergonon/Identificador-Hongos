@@ -1,12 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { MushroomInfo, GroundingSource, HistoryEntry, Recipe, ComparisonInfo } from './types';
+import { MushroomInfo, GroundingSource, HistoryEntry, Recipe, ComparisonInfo, ImageQuality } from './types';
 import { identifyMushroomFromImage, identifyMushroomFromText, compareMushrooms } from './services/geminiService';
 import { Icon } from './components/Icons';
-import { ApiKeyModal } from './components/ApiKeyModal';
 import { ManualModal } from './components/ManualModal';
-import { useApiKey } from './contexts/ApiKeyContext';
 import { useLanguage } from './contexts/LanguageContext';
 import { useTheme } from './contexts/ThemeContext';
+import { imageToDataUrl, createPlaceholderImage } from './utils';
 
 declare global {
   interface Window { jspdf: any; html2canvas: any; }
@@ -24,6 +23,7 @@ const triggerHapticFeedback = (pattern: number | number[] = 50) => {
 };
 
 type AppView = 'main' | 'comparator';
+type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Expert';
 
 const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -31,8 +31,6 @@ const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reje
   reader.onload = () => resolve((reader.result as string).split(',')[1]);
   reader.onerror = (error) => reject(error);
 });
-
-const dataUrlWithoutPrefix = (dataUrl: string): string => dataUrl.split(',')[1];
 
 const blobUrlToDataUrl = (blobUrl: string): Promise<string> => new Promise((resolve, reject) => {
   fetch(blobUrl).then(res => res.blob()).then(blob => {
@@ -42,20 +40,6 @@ const blobUrlToDataUrl = (blobUrl: string): Promise<string> => new Promise((reso
     reader.readAsDataURL(blob);
   }).catch(reject);
 });
-
-// Helper function to create a placeholder SVG image
-const createPlaceholderImage = (text: string): string => {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" style="background-color:#e2e8f0;">
-       <g transform="translate(150, 150) scale(4)">
-        <path fill="#94a3b8" d="M20 11.15v-.15a8 8 0 1 0-16 0v.15 M12 12v6 M12 22h0 M10 18h4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
-      </g>
-      <text x="150" y="240" font-family="sans-serif" font-size="18" fill="#475569" text-anchor="middle" dominant-baseline="middle">${text}</text>
-    </svg>
-  `.trim();
-  const base64Svg = btoa(svg.replace(/\n/g, ''));
-  return `data:image/svg+xml;base64,${base64Svg}`;
-};
 
 // Creates a compressed thumbnail from a data URL to save storage space.
 const createThumbnail = (dataUrl: string, maxSize = 400): Promise<string> => {
@@ -88,8 +72,9 @@ const createThumbnail = (dataUrl: string, maxSize = 400): Promise<string> => {
             resolve(canvas.toDataURL('image/jpeg', 0.85));
         };
         img.onerror = () => {
-            console.error("Failed to load image for thumbnail creation.");
-            resolve(dataUrl);
+            console.error(`Failed to load image for thumbnail creation from source: ${dataUrl.substring(0, 100)}...`);
+            // Fallback to a placeholder image if the original image fails to load.
+            resolve(createPlaceholderImage('Image Error'));
         };
         img.src = dataUrl;
     });
@@ -135,7 +120,18 @@ const SearchInput: React.FC<{ onSearch: (query: string) => void; isLoading: bool
   );
 };
 
-const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: boolean; onTextSearch: (query: string) => void; onError: (message: string) => void; }> = ({ onImageSelect, isLoading, onTextSearch, onError }) => {
+interface MainInputProps {
+    onImageSelect: (file: File) => void;
+    isLoading: boolean;
+    onTextSearch: (query: string) => void;
+    onError: (errorCode: string) => void;
+    difficultyLevel: DifficultyLevel;
+    onDifficultyChange: (level: DifficultyLevel) => void;
+    imageQuality: ImageQuality;
+    onImageQualityChange: (quality: ImageQuality) => void;
+}
+
+const MainInput: React.FC<MainInputProps> = ({ onImageSelect, isLoading, onTextSearch, onError, difficultyLevel, onDifficultyChange, imageQuality, onImageQualityChange }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
@@ -143,7 +139,7 @@ const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: bool
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) { onError('The selected file is not an image. Please choose a JPG, PNG, WEBP, etc.'); if (event.target) event.target.value = ''; return; }
+      if (!file.type.startsWith('image/')) { onError('IMAGE_UPLOAD_ERROR'); if (event.target) event.target.value = ''; return; }
       onImageSelect(file);
     }
     if (event.target) event.target.value = '';
@@ -157,6 +153,38 @@ const MainInput: React.FC<{ onImageSelect: (file: File) => void; isLoading: bool
       </div>
       <p className="text-gray-600 dark:text-slate-400 mb-6">{t('identifyMushroomTitle')}</p>
       
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 dark:text-slate-400 mb-2 text-center">{t('difficultyLevel')}</label>
+            <div className="flex justify-center bg-gray-200 dark:bg-slate-700/50 rounded-lg p-1">
+              {(['Beginner', 'Intermediate', 'Expert'] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => onDifficultyChange(level)}
+                  className={`w-1/3 px-3 py-1 text-sm font-semibold rounded-md transition-colors ${difficultyLevel === level ? 'bg-amber-600 text-white shadow' : 'text-gray-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-600/50'}`}
+                >
+                  {t(`difficulty_${level}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 dark:text-slate-400 mb-2 text-center">{t('imageQuality')}</label>
+            <div className="flex justify-center bg-gray-200 dark:bg-slate-700/50 rounded-lg p-1">
+              {(['Standard', 'High'] as const).map((quality) => (
+                <button
+                  key={quality}
+                  onClick={() => onImageQualityChange(quality)}
+                  className={`w-1/2 px-3 py-1 text-sm font-semibold rounded-md transition-colors ${imageQuality === quality ? 'bg-amber-600 text-white shadow' : 'text-gray-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-600/50'}`}
+                >
+                  {t(`quality_${quality}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+      </div>
+
+
       <SearchInput onSearch={onTextSearch} isLoading={isLoading} placeholder={t('searchByNamePlaceholder')} />
       
       <div className="relative flex items-center my-4">
@@ -251,21 +279,24 @@ interface ResultCardProps {
     onToggleCollection: () => void; 
     onStartCompare?: () => void;
     onEditDiary: () => void;
+    difficulty: DifficultyLevel;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection, onToggleCollection, onStartCompare, onEditDiary }) => {
-    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, imageGenerationFailed, personalNotes, findingDate, location, userPhotos } = result;
+const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection, onToggleCollection, onStartCompare, onEditDiary, difficulty }) => {
+    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, mainImageGenerationFailed, mapGenerationFailed, personalNotes, findingDate, location, userPhotos } = result;
     const { t } = useLanguage();
+    const { theme } = useTheme();
     const resultCardRef = useRef<HTMLDivElement>(null);
     const shareableCardRef = useRef<HTMLDivElement | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [isExportingJpg, setIsExportingJpg] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
     const [showShareableCard, setShowShareableCard] = useState(false);
 
     if (!mushroomInfo) return null;
 
     const [sharedRecipe, setSharedRecipe] = useState<string | null>(null);
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ [t('symptoms')]: true, [t('similarMushrooms')]: true, [t('myFieldDiarySectionTitle')]: true });
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ [t('toxicity')]: true, [t('similarMushrooms')]: true, [t('myFieldDiarySectionTitle')]: true });
 
     const toggleSection = (title: string) => setOpenSections(prev => ({...prev, [title]: !prev[title]}));
 
@@ -315,10 +346,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
         const originalOpenSections = { ...openSections };
         
         const allPossibleSections = [
-            mapaDistribucionSrc ? t('distributionMap') : null,
+            mushroomInfo.distribucionGeografica ? t('distributionMap') : null,
             mushroomInfo.usosCulinarios?.length > 0 ? t('culinaryUses') : null,
             mushroomInfo.toxicidad ? t('toxicity') : null,
-            mushroomInfo.toxicidad.sintomas ? t('symptoms') : null,
             mushroomInfo.hongosSimilares?.length > 0 ? t('similarMushrooms') : null,
             mushroomInfo.recetas?.length > 0 ? t('recipes') : null,
             sources.length > 0 ? t('sources') : null,
@@ -347,6 +377,37 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
         }, 500);
     };
 
+    const handleExportJpg = async () => {
+        if (!resultCardRef.current || !mushroomInfo) return;
+        setIsExportingJpg(true);
+        triggerHapticFeedback();
+        const buttonsToHide = resultCardRef.current.querySelectorAll('.hide-on-export');
+        buttonsToHide.forEach(btn => ((btn as HTMLElement).style.visibility = 'hidden'));
+        
+        await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+
+        try {
+            const canvas = await window.html2canvas(resultCardRef.current, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+            });
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.download = `${mushroomInfo.nombreComun.replace(/ /g, '_')}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Failed to export as JPG:', error);
+            alert('Failed to export image.');
+        } finally {
+            setIsExportingJpg(false);
+            buttonsToHide.forEach(btn => ((btn as HTMLElement).style.visibility = 'visible'));
+        }
+    };
+
     const Section: React.FC<{ title: string; icon: string; children: React.ReactNode; }> = ({ title, icon, children }) => {
         const isOpen = openSections[title] ?? false;
         return (
@@ -358,7 +419,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                     </div>
                     <Icon name="chevron-down" className={`w-6 h-6 text-gray-500 dark:text-slate-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen' : 'max-h-0'}`}>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[9999px]' : 'max-h-0'}`}>
                     <div className="pl-10 pb-6 text-gray-700 dark:text-slate-300 text-base">{children}</div>
                 </div>
             </div>
@@ -390,26 +451,35 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
         <div className="p-6 md:p-8">
             <div className="md:flex md:gap-8">
                 <div className="md:w-1/3 mb-6 md:mb-0">
-                    <img src={imageSrc} alt={mushroomInfo.nombreComun} className="rounded-xl shadow-lg w-full object-cover aspect-square"/>
-                    {imageGenerationFailed && (<div className="mt-2 p-2 bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 rounded-lg text-center"><p className="text-xs text-amber-800 dark:text-amber-300">{t('imageGenerationFailedWarning')}</p></div>)}
+                    <img 
+                        src={imageSrc} 
+                        alt={mushroomInfo.nombreComun} 
+                        className="rounded-xl shadow-lg w-full object-cover aspect-square"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPlaceholderImage('Image Error'); }}
+                    />
+                    {mainImageGenerationFailed && (<div className="mt-2 p-2 bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 rounded-lg text-center"><p className="text-xs text-amber-800 dark:text-amber-300">{t('imageGenerationFailedWarning')}</p></div>)}
                 </div>
                 <div className="md:w-2/3">
                     <div className="mb-4">
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-stone-800 dark:text-amber-200 break-words">{mushroomInfo.nombreComun}</h2>
                         <p className="text-lg sm:text-xl text-gray-500 dark:text-slate-400 italic mt-1 break-words">{mushroomInfo.nombreCientifico}</p>
-                        {mushroomInfo.sinonimos?.length > 0 && <p className="text-sm text-gray-600 dark:text-slate-300 mt-2 break-words"><strong>{t('alsoKnownAs')}:</strong> {mushroomInfo.sinonimos.join(', ')}</p>}
+                        {difficulty !== 'Beginner' && mushroomInfo.sinonimos?.length > 0 && <p className="text-sm text-gray-600 dark:text-slate-300 mt-2 break-words"><strong>{t('alsoKnownAs')}:</strong> {mushroomInfo.sinonimos.join(', ')}</p>}
                     </div>
                     <div className="flex flex-wrap justify-start sm:justify-end gap-2">
                         <button onClick={handleShareAsImage} disabled={isSharing} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
                             {isSharing ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="share-up" className="w-4 h-4" />}
                             {isSharing ? t('sharing') : t('share')}
                         </button>
-                        {onStartCompare && (<button onClick={() => { onStartCompare(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"><Icon name="compare" className="w-4 h-4" />{t('compare')}</button>)}
-                        <button onClick={onToggleCollection} className={`hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${ isInCollection ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`}><Icon name="bookmark" className="w-4 h-4" />{isInCollection ? t('saved') : t('save')}</button>
+                        {onStartCompare && (<button onClick={() => { onStartCompare(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-100 text-amber-800 hover:bg-amber-200 focus:ring-amber-500 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70"><Icon name="compare" className="w-4 h-4" />{t('compare')}</button>)}
+                        <button onClick={() => { onToggleCollection(); triggerHapticFeedback(); }} className={`hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${ isInCollection ? 'bg-red-100 text-red-800 hover:bg-red-200 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/70' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600' }`}><Icon name="bookmark" className="w-4 h-4" />{isInCollection ? t('saved') : t('save')}</button>
                         {isInCollection && (<button onClick={() => { onEditDiary(); triggerHapticFeedback(); }} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-100 text-blue-800 hover:bg-blue-200 focus:ring-blue-500 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70"><Icon name="pencil" className="w-4 h-4" />{t('editDiary')}</button>)}
                         <button onClick={handleExportPdf} disabled={isExporting} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
                             {isExporting ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="download" className="w-4 h-4" />}
                             {isExporting ? t('exporting') : t('exportToPdf')}
+                        </button>
+                        <button onClick={handleExportJpg} disabled={isExportingJpg} className="hide-on-export inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-amber-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50">
+                            {isExportingJpg ? <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></span> : <Icon name="photo" className="w-4 h-4" />}
+                            {isExportingJpg ? t('exporting') : t('exportToJpg')}
                         </button>
                     </div>
                     <div className="mt-4">
@@ -429,7 +499,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                         {findingDate && (<div className="flex items-center gap-3"><Icon name="calendar" className="w-5 h-5 text-gray-500 dark:text-slate-400"/><p><strong>{t('fieldDiaryDateLabel')}:</strong> {new Date(findingDate).toLocaleDateString()}</p></div>)}
                         {location && (<div className="flex items-center gap-3"><Icon name="location-pin" className="w-5 h-5 text-gray-500 dark:text-slate-400"/> <p><strong>{t('fieldDiaryLocationLabel')}:</strong> <a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</a></p> </div>)}
                         {personalNotes && (<div><h4 className="font-semibold mb-1">{t('fieldDiaryNotesLabel')}:</h4><p className="whitespace-pre-wrap bg-stone-50 dark:bg-stone-900/40 p-3 rounded-md">{personalNotes}</p></div>)}
-                        {userPhotos && userPhotos.length > 0 && (<div><h4 className="font-semibold mb-2">{t('fieldDiaryPhotosLabel')}:</h4><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">{userPhotos.map((photo, i) => <img key={i} src={photo} alt={`${t('userPhoto')} ${i+1}`} className="w-full h-auto object-cover rounded-md shadow-sm" />)}</div></div>)}
+                        {userPhotos && userPhotos.length > 0 && (<div><h4 className="font-semibold mb-2">{t('fieldDiaryPhotosLabel')}:</h4><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">{userPhotos.map((photo, i) => <img key={i} src={photo} alt={`${t('userPhoto')} ${i+1}`} className="w-full h-auto object-cover rounded-md shadow-sm" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPlaceholderImage('Photo Error'); }} />)}</div></div>)}
                     </div>
                 </Section>
               )}
@@ -440,30 +510,57 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                         {getToxicityBadge(mushroomInfo.toxicidad.nivelToxicidad)}
                     </div>
                     <p className="bg-yellow-100 dark:bg-yellow-900/40 border-l-4 border-yellow-500 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300 p-4 rounded-r-lg break-words">{mushroomInfo.toxicidad.descripcion}</p>
-                    {mushroomInfo.toxicidad.compuestosToxicos.length > 0 && (<div><h4 className="font-semibold text-gray-800 dark:text-slate-200 mb-1">{t('toxicCompounds')}:</h4><ul className="list-disc pl-5 text-sm space-y-1">{mushroomInfo.toxicidad.compuestosToxicos.map((c, i) => <li key={i} className="break-words">{c}</li>)}</ul></div>)}
+                    {difficulty !== 'Beginner' && mushroomInfo.toxicidad.compuestosToxicos.length > 0 && (<div><h4 className="font-semibold text-gray-800 dark:text-slate-200 mb-1">{t('toxicCompounds')}:</h4><ul className="list-disc pl-5 text-sm space-y-1">{mushroomInfo.toxicidad.compuestosToxicos.map((c, i) => <li key={i} className="break-words">{c}</li>)}</ul></div>)}
+                    {mushroomInfo.toxicidad.sintomas && (
+                        <div>
+                            <h4 className="font-semibold text-gray-800 dark:text-slate-200 mb-1">{t('symptoms')}:</h4>
+                            <p className="whitespace-pre-wrap bg-stone-50 dark:bg-stone-900/40 p-3 rounded-md">{mushroomInfo.toxicidad.sintomas}</p>
+                        </div>
+                    )}
+                    <div className="p-4 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg">
+                        <h4 className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><Icon name="cross" className="w-5 h-5" />{t('firstAid')}</h4>
+                        <p className="mt-2 text-red-700 dark:text-red-300 text-sm break-words">{mushroomInfo.toxicidad.primerosAuxilios}</p>
+                    </div>
                 </div>
               </Section>
-              {mushroomInfo.toxicidad.sintomas && (
-                <Section title={t('symptoms')} icon="cross">
-                  <p className="break-words whitespace-pre-wrap">{mushroomInfo.toxicidad.sintomas}</p>
-                </Section>
-              )}
-               <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg">
-                  <h4 className="font-bold text-red-800 dark:text-red-200 flex items-center gap-2"><Icon name="cross" className="w-5 h-5" />{t('firstAid')}</h4>
-                  <p className="mt-2 text-red-700 dark:text-red-300 text-sm break-words">{mushroomInfo.toxicidad.primerosAuxilios}</p>
-              </div>
+              {mushroomInfo.usosCulinarios?.length > 0 && <Section title={t('culinaryUses')} icon="utensils"><ul className="list-disc pl-5 space-y-1">{mushroomInfo.usosCulinarios.map((uso, i) => <li key={i} className="break-words">{uso}</li>)}</ul></Section>}
               {mushroomInfo.hongosSimilares?.length > 0 && (
                 <Section title={t('similarMushrooms')} icon="cross">
                     <div className="space-y-4">{mushroomInfo.hongosSimilares.map((similar, i) => (
                         <div key={i} className={`p-4 border rounded-lg ${similar.esToxico ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/40' : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/40'}`}>
-                            <h4 className={`font-bold text-lg ${similar.esToxico ? 'text-red-900 dark:text-red-200' : 'text-amber-900 dark:text-amber-200'} break-words`}>{similar.nombreComun}</h4><p className={`text-sm ${similar.esToxico ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'} italic mb-2 break-words`}>{similar.nombreCientifico}</p>
-                            <p className={`font-semibold ${similar.esToxico ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'}`}>{t('keyDifference')}:</p><p className={`${similar.esToxico ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'} break-words`}>{similar.diferenciaClave}</p>
+                            <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mb-1">
+                                <h4 className={`font-bold text-lg ${similar.esToxico ? 'text-red-900 dark:text-red-200' : 'text-amber-900 dark:text-amber-200'} break-words`}>{similar.nombreComun}</h4>
+                                {similar.esToxico && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
+                                        <Icon name="cross" className="w-3 h-3" />
+                                        {t('toxic')}
+                                    </span>
+                                )}
+                            </div>
+                            <p className={`text-sm ${similar.esToxico ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'} italic mb-2 break-words`}>{similar.nombreCientifico}</p>
+                            <p className={`${similar.esToxico ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'} break-words`}>
+                                <span className="font-semibold">{t('keyDifference')}:</span> {similar.diferenciaClave}
+                            </p>
                         </div>))}</div>
                     <p className="mt-4 text-sm text-gray-500 dark:text-slate-400"><strong>{t('importantDisclaimerSimilar')}</strong></p>
                 </Section>
               )}
-              {mapaDistribucionSrc && <Section title={t('distributionMap')} icon="map"><div className="space-y-4"><img src={mapaDistribucionSrc} alt={`Map of ${mushroomInfo.nombreComun}`} className="rounded-lg shadow-md w-full object-contain" /><p className="break-words">{mushroomInfo.distribucionGeografica}</p></div></Section>}
-              {mushroomInfo.usosCulinarios?.length > 0 && <Section title={t('culinaryUses')} icon="utensils"><ul className="list-disc pl-5 space-y-1">{mushroomInfo.usosCulinarios.map((uso, i) => <li key={i} className="break-words">{uso}</li>)}</ul></Section>}
+              {mushroomInfo.distribucionGeografica && (
+                <Section title={t('distributionMap')} icon="map">
+                    <div className="space-y-4">
+                        {mapaDistribucionSrc ? (
+                            <img src={mapaDistribucionSrc} alt={`Map of ${mushroomInfo.nombreComun}`} className="rounded-lg shadow-md w-full object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPlaceholderImage('Map Error'); }} />
+                        ) : (
+                            mapGenerationFailed && (
+                                <div className="p-3 bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                                    <p className="text-sm text-red-800 dark:text-red-300">{t('imageGenerationFailedWarning')}</p>
+                                </div>
+                            )
+                        )}
+                        <p className="break-words">{mushroomInfo.distribucionGeografica}</p>
+                    </div>
+                </Section>
+              )}
               {mushroomInfo.recetas?.length > 0 && (
               <Section title={t('recipes')} icon="pot">
                 {mushroomInfo.recetas.map((recipe, i) => (
@@ -659,14 +756,14 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
   const [isManualOpen, setIsManualOpen] = useState(false);
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [comparisonMushrooms, setComparisonMushrooms] = useState<{ mushroomA: HistoryEntry | null, mushroomB: HistoryEntry | null }>({ mushroomA: null, mushroomB: null });
   const [comparisonResult, setComparisonResult] = useState<ComparisonInfo | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [isFieldDiaryOpen, setIsFieldDiaryOpen] = useState(false);
   const [editingDiaryEntry, setEditingDiaryEntry] = useState<HistoryEntry | null>(null);
-  
-  const { effectiveApiKey } = useApiKey();
+  const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevel>('Intermediate');
+  const [imageQuality, setImageQuality] = useState<ImageQuality>('Standard');
+
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
@@ -677,22 +774,19 @@ function App() {
     try {
         const storedHistory = localStorage.getItem('mushroomHistory');
         if (storedHistory) setHistory(JSON.parse(storedHistory));
-    } catch (e) {
-        console.error("Failed to load/parse history from localStorage.", e);
-    }
-    try {
         const storedCollection = localStorage.getItem('mushroomCollection');
         if (storedCollection) setCollection(JSON.parse(storedCollection));
+        const storedQuality = localStorage.getItem('mushroomImageQuality');
+        if (storedQuality === 'Standard' || storedQuality === 'High') setImageQuality(storedQuality);
     } catch (e) {
-        console.error("Failed to load/parse collection from localStorage.", e);
+        console.error("Failed to load data from localStorage.", e);
     }
   }, []);
 
   useEffect(() => {
-    if (!effectiveApiKey) {
-      setIsApiKeyModalOpen(true);
-    }
-  }, [effectiveApiKey]);
+    localStorage.setItem('mushroomImageQuality', imageQuality);
+  }, [imageQuality]);
+
 
   const saveHistory = (newHistory: HistoryEntry[]) => { const sorted = newHistory.sort((a, b) => b.timestamp - a.timestamp); setHistory(sorted); localStorage.setItem('mushroomHistory', JSON.stringify(sorted)); };
   const saveCollection = (newCollection: HistoryEntry[]) => { setCollection(newCollection); localStorage.setItem('mushroomCollection', JSON.stringify(newCollection)); };
@@ -707,21 +801,57 @@ function App() {
     setComparisonMushrooms({ mushroomA: null, mushroomB: null }); 
     setComparisonResult(null); 
   }, []);
+
+  const processError = useCallback((err: any) => {
+    const errorCode = err?.message || 'UNEXPECTED_ERROR';
+    let displayMessage = '';
+
+    switch (errorCode) {
+        case 'API_QUOTA':
+            displayMessage = t('error_api_quota');
+            break;
+        case 'SERVICE_CONFIG_ERROR':
+             displayMessage = t('error_service_config');
+             break;
+        case 'NETWORK_ERROR':
+            displayMessage = t('error_network');
+            break;
+        case 'INVALID_RESPONSE':
+            displayMessage = t('error_invalidResponse');
+            break;
+        case 'IDENTIFY_FAILED':
+            displayMessage = t('error_identify_failed');
+            break;
+        case 'IMAGE_UPLOAD_ERROR':
+            displayMessage = t('error_imageUpload');
+            break;
+        default:
+            console.error("Unhandled error:", err);
+            displayMessage = t('unexpectedError');
+    }
+    setError(displayMessage);
+  }, [t]);
   
   const handleImageSelect = useCallback((file: File) => { handleReset(); const src = URL.createObjectURL(file); setImage({ file, src, mimeType: file.type }); }, [handleReset]);
   
   const handleProcessResult = async (newEntry: HistoryEntry) => {
     triggerHapticFeedback([100, 30, 100]);
     try {
-        const thumbImageSrc = await createThumbnail(newEntry.imageSrc);
-        const thumbMapSrc = newEntry.mapaDistribucionSrc ? await createThumbnail(newEntry.mapaDistribucionSrc) : undefined;
-        
-        const finalEntry = { ...newEntry, imageSrc: thumbImageSrc, mapaDistribucionSrc: thumbMapSrc };
+        // Sanitize all images to prevent CORS issues
+        const cleanImageSrc = await imageToDataUrl(newEntry.imageSrc);
+        const cleanMapSrc = newEntry.mapaDistribucionSrc ? await imageToDataUrl(newEntry.mapaDistribucionSrc) : undefined;
 
+        const thumbImageSrc = await createThumbnail(cleanImageSrc);
+        const thumbMapSrc = cleanMapSrc ? await createThumbnail(cleanMapSrc) : undefined;
+        
+        const finalEntry = { ...newEntry, imageSrc: cleanImageSrc, mapaDistribucionSrc: cleanMapSrc, difficulty: difficultyLevel };
+        const historyEntry = { ...newEntry, imageSrc: thumbImageSrc, mapaDistribucionSrc: thumbMapSrc, difficulty: difficultyLevel };
+        
         setCurrentResult(finalEntry);
-        saveHistory([finalEntry, ...history].slice(0, 30));
+        saveHistory([historyEntry, ...history].slice(0, 30));
+
     } catch (error) {
-        console.error("Error creating thumbnails for history:", error);
+        console.error("Error processing result images:", error);
         setCurrentResult(newEntry);
         saveHistory([newEntry, ...history].slice(0, 30));
     }
@@ -732,17 +862,16 @@ function App() {
   const processImage = async () => {
     if (!image) return;
     setIsLoading(true); setIsTextSearching(false); setError(null); setCurrentResult(null);
-    if (!effectiveApiKey) { setError(t('apiKeyError')); setIsApiKeyModalOpen(true); setIsLoading(false); return; }
     try {
         const base64Image = await fileToBase64(image.file);
         const imageSrcDataUrl = await blobUrlToDataUrl(image.src);
         const location = await getLocation();
-        const { mushroomInfo, sources, mapaDistribucionSrc } = await identifyMushroomFromImage(effectiveApiKey, base64Image, image.mimeType, location, language);
-        await handleProcessResult({ id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, timestamp: Date.now(), imageSrc: imageSrcDataUrl, type: 'mushroom', mushroomInfo, sources, mapaDistribucionSrc: mapaDistribucionSrc ?? undefined });
+        const { mushroomInfo, sources, mapaDistribucionSrc, mapGenerationFailed } = await identifyMushroomFromImage(base64Image, image.mimeType, location, language, difficultyLevel, imageQuality);
+        
+        await handleProcessResult({ id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, timestamp: Date.now(), imageSrc: imageSrcDataUrl, type: 'mushroom', mushroomInfo, sources, mapaDistribucionSrc: mapaDistribucionSrc ?? undefined, mapGenerationFailed });
         
     } catch (err: any) {
-        const errorMessage = err.message || t('unexpectedError'); setError(errorMessage);
-        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('resource has been exhausted') || errorMessage.toLowerCase().includes('api key not valid')) { setIsApiKeyModalOpen(true); }
+        processError(err);
     } finally { setIsLoading(false); setImage(null); }
 };
 
@@ -750,9 +879,9 @@ function App() {
     handleReset(); 
     setIsLoading(true); 
     setIsTextSearching(true);
-    if (!effectiveApiKey) { setError(t('apiKeyError')); setIsApiKeyModalOpen(true); setIsLoading(false); return; }
     try {
-        const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, imageGenerationFailed } = await identifyMushroomFromText(effectiveApiKey, query, language);
+        const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, mainImageGenerationFailed, mapGenerationFailed } = await identifyMushroomFromText(query, language, difficultyLevel, imageQuality);
+        
         const finalImageSrc = imageSrc || createPlaceholderImage(mushroomInfo.nombreComun);
         await handleProcessResult({ 
             id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, 
@@ -762,12 +891,11 @@ function App() {
             mushroomInfo, 
             sources, 
             mapaDistribucionSrc: mapaDistribucionSrc ?? undefined,
-            imageGenerationFailed: imageGenerationFailed
+            mainImageGenerationFailed,
+            mapGenerationFailed
         });
     } catch (err: any) {
-        const errorMessage = err.message || t('unexpectedError');
-        setError(errorMessage);
-        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('resource has been exhausted') || errorMessage.toLowerCase().includes('api key not valid')) { setIsApiKeyModalOpen(true); }
+        processError(err);
     } finally { setIsLoading(false); setIsTextSearching(false); }
   };
   
@@ -836,8 +964,14 @@ function App() {
     return [...collection]
       .filter(item => (item.mushroomInfo?.nombreComun || '').toLowerCase().includes(collectionNameFilter.toLowerCase()))
       .sort((a, b) => {
-        const nameA = a.mushroomInfo?.nombreComun || ''; const nameB = b.mushroomInfo?.nombreComun || '';
-        switch (collectionSortOrder) { case 'name-asc': return nameA.localeCompare(nameB); case 'name-desc': return nameB.localeCompare(nameA); case 'date-asc': return a.timestamp - b.timestamp; default: return b.timestamp - a.timestamp; }
+        const nameA = a.mushroomInfo?.nombreComun || ''; 
+        const nameB = b.mushroomInfo?.nombreComun || '';
+        switch (collectionSortOrder) { 
+          case 'name-asc': return nameA.localeCompare(nameB); 
+          case 'name-desc': return nameB.localeCompare(nameA); 
+          case 'date-asc': return a.timestamp - b.timestamp; 
+          default: return b.timestamp - a.timestamp; 
+        }
       });
   }, [collection, collectionSortOrder, collectionNameFilter]);
 
@@ -864,7 +998,7 @@ function App() {
         if (error) return (
         <div className="text-center p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg max-w-md w-full">
             <Icon name="cross" className="w-16 h-16 text-red-500 mx-auto mb-4" /><h3 className="text-xl font-bold text-red-800 dark:text-red-300 mb-2">{t('errorTitle')}</h3><p className="text-red-700 dark:text-red-200 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{error}</p>
-            <button onClick={handleReset} className="mt-6 px-6 py-2 bg-red-600 dark:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">{isApiKeyModalOpen ? t('close') : t('tryAgain')}</button>
+            <button onClick={handleReset} className="mt-6 px-6 py-2 bg-red-600 dark:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">{t('tryAgain')}</button>
         </div>
         );
         if (currentResult) {
@@ -872,7 +1006,7 @@ function App() {
             // Ensure the currentResult has the latest diary data from the collection
             const collectionVersion = collection.find(c => c.id === currentResult.id);
             const displayResult = collectionVersion || currentResult;
-            return <ResultCard result={displayResult} onReset={handleReset} isInCollection={isInCollection} onToggleCollection={handleToggleCollection} onStartCompare={() => handleStartCompare(currentResult)} onEditDiary={handleEditDiary} />;
+            return <ResultCard result={displayResult} onReset={handleReset} isInCollection={isInCollection} onToggleCollection={handleToggleCollection} onStartCompare={() => handleStartCompare(currentResult)} onEditDiary={handleEditDiary} difficulty={displayResult.difficulty || 'Intermediate'} />;
         }
         if (image) return (
         <div className="text-center p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg max-w-md">
@@ -883,7 +1017,16 @@ function App() {
         
         return (
         <div className="flex flex-col items-center gap-4">
-            <MainInput onImageSelect={handleImageSelect} isLoading={isLoading} onTextSearch={handleTextSearch} onError={setError} />
+            <MainInput 
+              onImageSelect={handleImageSelect} 
+              isLoading={isLoading} 
+              onTextSearch={handleTextSearch} 
+              onError={(errorCode) => processError(new Error(errorCode))}
+              difficultyLevel={difficultyLevel}
+              onDifficultyChange={setDifficultyLevel}
+              imageQuality={imageQuality}
+              onImageQualityChange={setImageQuality}
+            />
             <div className="flex flex-wrap justify-center items-center gap-4 mt-4">
                 {history.length > 0 && <button onClick={() => { setIsHistoryOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="history" className="w-5 h-5" />{t('history')}</button>}
                 {collection.length > 0 && <button onClick={() => { setIsCollectionOpen(true); triggerHapticFeedback(); }} className="inline-flex items-center justify-center gap-2 px-6 py-2 text-gray-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors bg-white/60 dark:bg-slate-800/60"><Icon name="book" className="w-5 h-5" />{t('myCollection')}</button>}
@@ -903,20 +1046,20 @@ function App() {
         const handleComparisonSearch = async (query: string) => {
             setIsLoading(true); setError(null); setComparisonResult(null);
             try {
-                const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc } = await identifyMushroomFromText(effectiveApiKey, query, language);
+                const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc } = await identifyMushroomFromText(query, language, 'Intermediate', 'Standard');
                 const finalImageSrc = imageSrc || createPlaceholderImage(mushroomInfo.nombreComun);
                 setComparisonMushrooms(prev => ({ ...prev, mushroomB: { id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, timestamp: Date.now(), imageSrc: finalImageSrc, type: 'mushroom', mushroomInfo, sources, mapaDistribucionSrc: mapaDistribucionSrc ?? undefined } }));
-            } catch (err: any) { setError(err.message || 'Could not find the mushroom to compare.'); } finally { setIsLoading(false); }
+            } catch (err: any) { processError(err); } finally { setIsLoading(false); }
         };
 
         const handleGenerateComparison = async () => {
             if (!comparisonMushrooms.mushroomA?.mushroomInfo || !comparisonMushrooms.mushroomB?.mushroomInfo) return;
             setIsLoading(true); setError(null); setComparisonResult(null);
             try {
-                const result = await compareMushrooms(effectiveApiKey, comparisonMushrooms.mushroomA.mushroomInfo, comparisonMushrooms.mushroomB.mushroomInfo, language);
+                const result = await compareMushrooms(comparisonMushrooms.mushroomA.mushroomInfo, comparisonMushrooms.mushroomB.mushroomInfo, language);
                 setComparisonResult(result);
                 triggerHapticFeedback([100, 30, 100]);
-            } catch (err: any) { setError(err.message || 'Could not generate the comparison.'); } finally { setIsLoading(false); }
+            } catch (err: any) { processError(err); } finally { setIsLoading(false); }
         }
 
         const getToxicityBadge = (level: string) => {
@@ -996,7 +1139,6 @@ function App() {
           <Icon name={theme === 'light' ? 'moon' : 'sun'} className="w-5 h-5" />
         </button>
       </div>
-      <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} onSave={handleReset} />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={history} onSelectItem={handleViewHistoryItem} onClearHistory={() => saveHistory([])} />
       <CollectionModal isOpen={isCollectionOpen} onClose={handleCloseCollection} collection={filteredAndSortedCollection} onSelectItem={handleViewHistoryItem} onRemoveItem={handleRemoveFromCollection} onExport={handleExportCollection} sortOrder={collectionSortOrder} onSortOrderChange={(e) => setCollectionSortOrder(e.target.value)} nameFilter={collectionNameFilter} onNameFilterChange={(e) => setCollectionNameFilter(e.target.value)} onStartCompare={handleStartCompare} />
       <ManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
