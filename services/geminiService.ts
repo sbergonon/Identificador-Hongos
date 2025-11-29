@@ -4,19 +4,34 @@ import { MushroomInfo, GroundingSource, Recipe, SimilarMushroom, ComparisonInfo,
 // --- API CLIENT HELPER ---
 // We initialize the client on demand to ensure we always get the latest API key from the environment.
 const getAiClient = () => {
-    // Safety check: Ensure process is defined before accessing env to prevent ReferenceErrors in some browser runtimes.
-    // We also use .trim() to remove accidental whitespace from copy-pasting the key in Render/env vars.
     let apiKey: string | undefined;
+
+    // 1. Try Vite standard (import.meta.env)
+    // Most modern React builds on Render use Vite. Variables must start with VITE_
     try {
-        if (typeof process !== 'undefined' && process.env) {
-            apiKey = process.env.API_KEY;
+        // @ts-ignore
+        if (typeof import.meta !== 'undefined' && import.meta.env) {
+            // @ts-ignore
+            apiKey = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY;
         }
     } catch (e) {
-        console.warn("Error accessing process.env:", e);
+        // Ignore errors accessing import.meta
+    }
+
+    // 2. Try process.env (Standard Node/Webpack/CRA)
+    // CRA requires REACT_APP_ prefix. Older builds might use plain API_KEY.
+    if (!apiKey) {
+        try {
+            if (typeof process !== 'undefined' && process.env) {
+                apiKey = process.env.REACT_APP_API_KEY || process.env.API_KEY || process.env.VITE_API_KEY;
+            }
+        } catch (e) {
+             // Ignore errors accessing process
+        }
     }
 
     if (!apiKey) {
-        console.error("API Key check failed: process.env.API_KEY is missing.");
+        console.error("API Key check failed: No valid API key found in environment variables (VITE_API_KEY, REACT_APP_API_KEY, or API_KEY).");
         throw new Error("SERVICE_CONFIG_ERROR_API_KEY_MISSING");
     }
 

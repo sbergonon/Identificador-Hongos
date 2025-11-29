@@ -114,7 +114,7 @@ const esTranslations = {
   "error_imageUpload": "El archivo seleccionado no es una imagen. Por favor, elige un archivo de imagen válido (JPG, PNG, WEBP, etc.).",
   "error_api_quota": "El servicio está experimentando una alta demanda en este momento. Por favor, inténtalo de nuevo más tarde.",
   "error_service_config": "Error de configuración: La API Key proporcionada no es válida. Por favor, verifica en Render que no haya espacios extra al copiar la clave.",
-  "error_service_config_api_key_missing": "Clave de API no encontrada. Asegúrate de que la variable de entorno 'API_KEY' está configurada correctamente en tu panel de control de Render.",
+  "error_service_config_api_key_missing": "Clave de API no encontrada. En Render, por seguridad, renombra tu variable de entorno a 'VITE_API_KEY' o 'REACT_APP_API_KEY'.",
   "error_identify_failed": "No se pudo identificar el hongo. Inténtalo con una imagen más clara o un nombre más específico.",
   "toxic": "TÓXICO"
 };
@@ -233,7 +233,7 @@ const enTranslations = {
   "error_imageUpload": "The selected file is not an image. Please choose a valid image file (JPG, PNG, WEBP, etc.).",
   "error_api_quota": "The service is currently experiencing high demand. Please try again later.",
   "error_service_config": "Configuration Error: The provided API Key is invalid. Please check Render configuration for extra spaces.",
-  "error_service_config_api_key_missing": "API Key not found. Please ensure the 'API_KEY' environment variable is correctly configured in your Render dashboard.",
+  "error_service_config_api_key_missing": "API Key not found. On Render, for security, please rename your environment variable to 'VITE_API_KEY' or 'REACT_APP_API_KEY'.",
   "error_identify_failed": "Could not identify the mushroom. Please try with a clearer image or a more specific name.",
   "toxic": "TOXIC"
 };
