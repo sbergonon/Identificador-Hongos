@@ -1,19 +1,16 @@
 import { GoogleGenAI, GroundingChunk, Modality } from "@google/genai";
 import { MushroomInfo, GroundingSource, Recipe, SimilarMushroom, ComparisonInfo, ToxicityInfo, ImageQuality } from '../types.ts';
 
-// --- API CLIENT INITIALIZATION ---
-let ai: GoogleGenAI;
-try {
+// --- API CLIENT HELPER ---
+// We initialize the client on demand to ensure we always get the latest API key from the environment,
+// which is critical when the user selects a key via the window.aistudio interface.
+const getAiClient = () => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-        // This specific error message will be caught and displayed to the user.
         throw new Error("SERVICE_CONFIG_ERROR_API_KEY_MISSING");
     }
-    ai = new GoogleGenAI({ apiKey });
-} catch (error) {
-    console.error("Failed to initialize GoogleGenAI client:", error);
-    // Let `ai` remain undefined. Functions below will handle it.
-}
+    return new GoogleGenAI({ apiKey });
+};
 
 
 type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Expert';
@@ -240,7 +237,7 @@ function sanitizeComparisonInfo(data: any): ComparisonInfo | null {
 
 const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'es' | 'en', difficulty: DifficultyLevel): Promise<{ mushroomInfo: MushroomInfo; sources: GroundingSource[] }> => {
   try {
-    if (!ai) throw new Error("SERVICE_CONFIG_ERROR_API_KEY_MISSING");
+    const ai = getAiClient();
 
     const textPart = { text: getMushroomJsonPrompt(parts.find(p => p.text).text, language, difficulty) };
     const imagePart = parts.find(p => p.inlineData);
@@ -254,7 +251,7 @@ const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'e
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-pro-preview',
       contents: { parts: finalParts },
       config: config,
     });
@@ -286,7 +283,7 @@ async function generateDistributionMap(mushroomInfo: MushroomInfo, language: 'es
         return { data: null, isQuotaError: false };
     }
     try {
-        if (!ai) return { data: null, isQuotaError: false };
+        const ai = getAiClient();
 
         const highQualityPromptEs = `Tarea: Generar un mapa de distribución geográfica. Sujeto: El hongo *${mushroomInfo.nombreCientifico}*. Datos de origen para la distribución: "${mushroomInfo.distribucionGeografica}". Requisitos: Estilo de mapa de atlas, limpio y profesional. Resalta claramente las regiones geográficas mencionadas en los datos de origen. Incluye etiquetas para continentes y océanos. El mapa debe ser visualmente claro y priorizar la precisión informativa sobre el estilo artístico.`;
         const standardQualityPromptEs = `Tarea: Generar un mapa de distribución geográfica claro y legible del hongo *${mushroomInfo.nombreCientifico}*, basado en esta descripción: "${mushroomInfo.distribucionGeografica}".`;
@@ -297,12 +294,18 @@ async function generateDistributionMap(mushroomInfo: MushroomInfo, language: 'es
         const prompt_text = language === 'es'
             ? (imageQuality === 'High' ? highQualityPromptEs : standardQualityPromptEs)
             : (imageQuality === 'High' ? highQualityPromptEn : standardQualityPromptEn);
+        
+        const imageSize = imageQuality === 'High' ? '2K' : '1K';
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3-pro-image-preview',
             contents: { parts: [{ text: prompt_text }] },
             config: {
                 responseModalities: [Modality.IMAGE],
+                imageConfig: {
+                     imageSize: imageSize,
+                     aspectRatio: '1:1'
+                }
             },
         });
 
@@ -331,7 +334,7 @@ async function generateDistributionMap(mushroomInfo: MushroomInfo, language: 'es
 
 async function generateMushroomImage(mushroomInfo: MushroomInfo, language: 'es' | 'en', imageQuality: ImageQuality): Promise<{ data: string | null; isQuotaError: boolean; }> {
     try {
-        if (!ai) return { data: null, isQuotaError: false };
+        const ai = getAiClient();
 
         const highQualityPromptEs = `Una fotografía de calidad de estudio, ultradetallada, 8k y fotorrealista del hongo *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}). La imagen debe ser micológicamente precisa, mostrando los detalles morfológicos correctos de la especie, sobre un fondo de estudio blanco y neutro.`;
         const standardQualityPromptEs = `Una fotografía clara y micológicamente precisa del hongo *${mushroomInfo.nombreCientifico}* (${mushroomInfo.nombreComun}) sobre un fondo neutro.`;
@@ -343,11 +346,17 @@ async function generateMushroomImage(mushroomInfo: MushroomInfo, language: 'es' 
             ? (imageQuality === 'High' ? highQualityPromptEs : standardQualityPromptEs)
             : (imageQuality === 'High' ? highQualityPromptEn : standardQualityPromptEn);
 
+        const imageSize = imageQuality === 'High' ? '2K' : '1K';
+
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3-pro-image-preview',
             contents: { parts: [{ text: prompt_text }] },
             config: {
                 responseModalities: [Modality.IMAGE],
+                imageConfig: {
+                    imageSize: imageSize,
+                    aspectRatio: '1:1'
+                }
             },
         });
 
@@ -439,12 +448,12 @@ export const compareMushrooms = async (
     language: 'es' | 'en'
 ): Promise<ComparisonInfo> => {
     try {
-        if (!ai) throw new Error("SERVICE_CONFIG_ERROR_API_KEY_MISSING");
+        const ai = getAiClient();
 
         const textPart = { text: getCompareMushroomPrompt(mushroomA, mushroomB, language) };
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview',
             contents: { parts: [textPart] },
             config: { responseMimeType: 'application/json' },
         });

@@ -5,10 +5,14 @@ import { Icon } from './components/Icons.tsx';
 import { ManualModal } from './components/ManualModal.tsx';
 import { useLanguage } from './contexts/LanguageContext.tsx';
 import { useTheme } from './contexts/ThemeContext.tsx';
-import { imageToDataUrl, createPlaceholderImage } from './utils.ts';
+import { imageToDataUrl, createPlaceholderImage, getFallbackMushroomIcon } from './utils.ts';
 
 declare global {
-  interface Window { jspdf: any; html2canvas: any; }
+  interface Window { 
+      jspdf: any; 
+      html2canvas: any; 
+      // aistudio removed to avoid type conflicts
+  }
 }
 
 // Helper for haptic feedback on supported devices
@@ -49,6 +53,12 @@ const createThumbnail = (dataUrl: string, maxSize = 400): Promise<string> => {
             return;
         }
 
+        // Fix: Skip SVG images as they don't need resizing and can cause canvas tainting or load errors
+        if (dataUrl.startsWith('data:image/svg+xml')) {
+            resolve(dataUrl);
+            return;
+        }
+
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -73,8 +83,8 @@ const createThumbnail = (dataUrl: string, maxSize = 400): Promise<string> => {
         };
         img.onerror = () => {
             console.error(`Failed to load image for thumbnail creation from source: ${dataUrl.substring(0, 100)}...`);
-            // Fallback to a placeholder image if the original image fails to load.
-            resolve(createPlaceholderImage('Image Error'));
+            // Fallback to the mushroom icon if the original image fails to load.
+            resolve(getFallbackMushroomIcon());
         };
         img.src = dataUrl;
     });
@@ -283,7 +293,7 @@ interface ResultCardProps {
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection, onToggleCollection, onStartCompare, onEditDiary, difficulty }) => {
-    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, mainImageGenerationFailed, mapGenerationFailed, personalNotes, findingDate, location, userPhotos } = result;
+    const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, personalNotes, findingDate, location, userPhotos } = result;
     const { t } = useLanguage();
     const { theme } = useTheme();
     const resultCardRef = useRef<HTMLDivElement>(null);
@@ -322,7 +332,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
 
         try {
             const canvas = await window.html2canvas(shareableCardRef.current, { useCORS: true, backgroundColor: null });
-            canvas.toBlob(async (blob) => {
+            canvas.toBlob(async (blob: Blob | null) => {
                 if (!blob) { alert('Could not generate image.'); setIsSharing(false); return; }
                 const file = new File([blob], `${mushroomInfo.nombreComun}.png`, { type: 'image/png' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -455,9 +465,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
                         src={imageSrc} 
                         alt={mushroomInfo.nombreComun} 
                         className="rounded-xl shadow-lg w-full object-cover aspect-square"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPlaceholderImage('Image Error'); }}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getFallbackMushroomIcon(); }}
                     />
-                    {mainImageGenerationFailed && (<div className="mt-2 p-2 bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 rounded-lg text-center"><p className="text-xs text-amber-800 dark:text-amber-300">{t('imageGenerationFailedWarning')}</p></div>)}
                 </div>
                 <div className="md:w-2/3">
                     <div className="mb-4">
@@ -548,14 +557,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onReset, isInCollection
               {mushroomInfo.distribucionGeografica && (
                 <Section title={t('distributionMap')} icon="map">
                     <div className="space-y-4">
-                        {mapaDistribucionSrc ? (
+                        {mapaDistribucionSrc && (
                             <img src={mapaDistribucionSrc} alt={`Map of ${mushroomInfo.nombreComun}`} className="rounded-lg shadow-md w-full object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPlaceholderImage('Map Error'); }} />
-                        ) : (
-                            mapGenerationFailed && (
-                                <div className="p-3 bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg text-center">
-                                    <p className="text-sm text-red-800 dark:text-red-300">{t('imageGenerationFailedWarning')}</p>
-                                </div>
-                            )
                         )}
                         <p className="break-words">{mushroomInfo.distribucionGeografica}</p>
                     </div>
@@ -668,7 +671,7 @@ const FieldDiaryModal: React.FC<FieldDiaryModalProps> = ({ isOpen, onClose, onSa
         const files = event.target.files;
         if (!files) return;
         
-        const newPhotosPromises = Array.from(files).map(file => createThumbnail(URL.createObjectURL(file), 800));
+        const newPhotosPromises = Array.from(files).map((file: File) => createThumbnail(URL.createObjectURL(file), 800));
         const newPhotosDataUrls = await Promise.all(newPhotosPromises);
         
         setPhotos(prev => [...prev, ...newPhotosDataUrls].slice(0, 10)); // Limit to 10 photos
@@ -769,6 +772,8 @@ function App() {
 
   const [collectionSortOrder, setCollectionSortOrder] = useState('date-desc');
   const [collectionNameFilter, setCollectionNameFilter] = useState('');
+  
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   useEffect(() => {
     try {
@@ -787,6 +792,29 @@ function App() {
     localStorage.setItem('mushroomImageQuality', imageQuality);
   }, [imageQuality]);
 
+  useEffect(() => {
+      const checkApiKey = async () => {
+          const win = window as any;
+          // Robust check for AI Studio environment
+          if (win.aistudio && typeof win.aistudio.hasSelectedApiKey === 'function') {
+              try {
+                  const hasKey = await win.aistudio.hasSelectedApiKey();
+                  setHasApiKey(hasKey);
+              } catch (e) {
+                  // Fallback for unexpected AI Studio errors, 
+                  // but assuming 'false' to allow safe retry in that environment.
+                  console.warn("AI Studio API check failed:", e);
+                  setHasApiKey(false);
+              }
+          } else {
+              // Production / Render environment:
+              // window.aistudio is undefined. We rely on process.env.API_KEY injected by the server/build.
+              // We assume true here to skip the "Select Key" screen.
+              setHasApiKey(true); 
+          }
+      };
+      checkApiKey();
+  }, []);
 
   const saveHistory = (newHistory: HistoryEntry[]) => { const sorted = newHistory.sort((a, b) => b.timestamp - a.timestamp); setHistory(sorted); localStorage.setItem('mushroomHistory', JSON.stringify(sorted)); };
   const saveCollection = (newCollection: HistoryEntry[]) => { setCollection(newCollection); localStorage.setItem('mushroomCollection', JSON.stringify(newCollection)); };
@@ -885,7 +913,9 @@ function App() {
     try {
         const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc, mainImageGenerationFailed, mapGenerationFailed } = await identifyMushroomFromText(query, language, difficultyLevel, imageQuality);
         
-        const finalImageSrc = imageSrc || createPlaceholderImage(mushroomInfo.nombreComun);
+        // Use the fallback mushroom icon if image generation failed
+        const finalImageSrc = imageSrc || getFallbackMushroomIcon();
+        
         await handleProcessResult({ 
             id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, 
             timestamp: Date.now(), 
@@ -993,7 +1023,16 @@ function App() {
             photosCount: entry.userPhotos?.length || 0
         }
     }));
-    const jsonString = JSON.stringify(exportData, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `mushroom_collection_export_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+    const jsonString = JSON.stringify(exportData, null, 2); 
+    const blob: Blob = new Blob([jsonString], { type: 'application/json' }); 
+    const url = URL.createObjectURL(blob); 
+    const link = document.createElement('a'); 
+    link.href = url; 
+    link.download = `mushroom_collection_export_${new Date().toISOString().split('T')[0]}.json`; 
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link); 
+    URL.revokeObjectURL(url);
   }, [filteredAndSortedCollection]);
 
     const renderMainView = () => {
@@ -1050,7 +1089,7 @@ function App() {
             setIsLoading(true); setError(null); setComparisonResult(null);
             try {
                 const { mushroomInfo, sources, imageSrc, mapaDistribucionSrc } = await identifyMushroomFromText(query, language, 'Intermediate', 'Standard');
-                const finalImageSrc = imageSrc || createPlaceholderImage(mushroomInfo.nombreComun);
+                const finalImageSrc = imageSrc || getFallbackMushroomIcon();
                 setComparisonMushrooms(prev => ({ ...prev, mushroomB: { id: `${Date.now()}-${mushroomInfo.nombreCientifico}`, timestamp: Date.now(), imageSrc: finalImageSrc, type: 'mushroom', mushroomInfo, sources, mapaDistribucionSrc: mapaDistribucionSrc ?? undefined } }));
             } catch (err: any) { processError(err); } finally { setIsLoading(false); }
         };
@@ -1126,6 +1165,41 @@ function App() {
         );
     }
   
+    if (!hasApiKey) {
+        return (
+            <main className="min-h-screen w-full bg-gradient-to-br from-stone-200 via-amber-100 to-orange-100 dark:from-slate-900 dark:via-stone-900 dark:to-amber-950 flex flex-col items-center justify-center p-4">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md text-center border border-amber-200 dark:border-stone-700">
+                     <div className="flex justify-center items-center gap-3 mb-6">
+                          <Icon name="mushroom" className="w-12 h-12 text-amber-800 dark:text-amber-200" />
+                     </div>
+                    <h2 className="text-2xl font-bold mb-4 text-stone-800 dark:text-amber-200">{t('appName')} - Gemini 3 Pro</h2>
+                    <p className="mb-8 text-gray-600 dark:text-slate-400">
+                        {language === 'es' 
+                          ? "Para utilizar los modelos avanzados Gemini 3 Pro y la generación de imágenes en alta resolución, es necesario seleccionar una clave de API válida."
+                          : "To use the advanced Gemini 3 Pro models and high-resolution image generation, you must select a valid API key."}
+                    </p>
+                    <button 
+                      onClick={async () => {
+                          const win = window as any;
+                          if (win.aistudio) {
+                              await win.aistudio.openSelectKey();
+                              setHasApiKey(true);
+                          }
+                      }} 
+                      className="w-full px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 transition-transform transform hover:scale-105"
+                    >
+                        {language === 'es' ? "Seleccionar Clave API" : "Select API Key"}
+                    </button>
+                     <p className="mt-6 text-xs text-gray-500 dark:text-slate-500">
+                        <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-amber-600 dark:hover:text-amber-400">
+                            {language === 'es' ? "Información de Facturación" : "Billing Information"}
+                        </a>
+                    </p>
+                </div>
+            </main>
+        );
+    }
+
   return (
     <main className="min-h-screen w-full bg-gradient-to-br from-stone-200 via-amber-100 to-orange-100 dark:from-slate-900 dark:via-stone-900 dark:to-amber-950 flex flex-col items-center justify-center p-4 overflow-y-auto relative">
       {notification && <Notification message={notification} onClose={() => setNotification(null)} />}

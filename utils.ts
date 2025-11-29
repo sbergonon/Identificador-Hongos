@@ -18,6 +18,27 @@ export const createPlaceholderImage = (text: string): string => {
 };
 
 /**
+ * Generates an aesthetic mushroom icon to use as a fallback when images fail to load
+ * or cannot be generated.
+ */
+export const getFallbackMushroomIcon = (): string => {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <rect width="400" height="400" fill="#fffbeb" rx="40" />
+    <circle cx="200" cy="200" r="160" fill="#fde68a" opacity="0.3" />
+    <path d="M200 110 C110 110 70 180 70 230 H330 C330 180 290 110 200 110 Z" fill="#d97706" />
+    <path d="M160 230 V330 C160 350 170 360 200 360 C230 360 240 350 240 330 V230 H160 Z" fill="#b45309" />
+    <ellipse cx="150" cy="170" rx="15" ry="10" fill="#fffbeb" opacity="0.5" />
+    <ellipse cx="260" cy="150" rx="20" ry="14" fill="#fffbeb" opacity="0.5" />
+    <ellipse cx="210" cy="190" rx="10" ry="8" fill="#fffbeb" opacity="0.5" />
+    <ellipse cx="110" cy="210" rx="12" ry="9" fill="#fffbeb" opacity="0.5" />
+    <ellipse cx="290" cy="200" rx="14" ry="10" fill="#fffbeb" opacity="0.5" />
+  </svg>
+  `.trim();
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
+/**
  * Converts an image from any source (URL, blob, data URL) to a clean data URL.
  * This is crucial for bypassing CORS issues when using libraries like html2canvas.
  * @param src The source URL of the image.
@@ -63,9 +84,9 @@ export const imageToDataUrl = (src: string): Promise<string> => {
     
     img.onerror = () => {
         // Cleaned up console.error to avoid logging the [object Object] event.
-        console.error(`Failed to load image from src: ${src.substring(0, 100)}...`);
-        // Fallback to a placeholder image to avoid showing a broken image link in the UI.
-        resolve(createPlaceholderImage('Image Failed to Load'));
+        console.error(`Failed to load image from src: ${src.substring(0, 50)}...`);
+        // Fallback to the mushroom icon to avoid showing a broken image link in the UI.
+        resolve(getFallbackMushroomIcon());
     };
     
     // If the src is already a data URL, it should load directly without network requests.
