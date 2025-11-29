@@ -167,6 +167,14 @@ const handleApiError = (error: unknown) => {
     throw new Error("UNEXPECTED_ERROR");
 };
 
+const isQuotaError = (error: unknown): boolean => {
+    if (error instanceof Error) {
+        const message = error.message;
+        return message.includes('429') || message.toLowerCase().includes('resource has been exhausted');
+    }
+    return false;
+};
+
 
 // --- SANITIZER FUNCTIONS ---
 
@@ -264,20 +272,24 @@ function sanitizeComparisonInfo(data: any): ComparisonInfo | null {
 // --- CORE API FUNCTIONS ---
 
 const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'es' | 'en', difficulty: DifficultyLevel): Promise<{ mushroomInfo: MushroomInfo; sources: GroundingSource[] }> => {
+  const ai = getAiClient();
+  const textPart = { text: getMushroomJsonPrompt(parts.find(p => p.text).text, language, difficulty) };
+  const imagePart = parts.find(p => p.inlineData);
+  const finalParts = imagePart ? [imagePart, textPart] : [textPart];
+
+  const config: any = {};
+  if (useGrounding) {
+    config.tools = [{ googleSearch: {} }];
+  } else {
+   config.responseMimeType = 'application/json';
+  }
+
+  // FALLBACK STRATEGY:
+  // 1. Try with the powerful model (Gemini 3 Pro)
+  // 2. If it hits a quota error (429), fallback to the faster, lighter model (Gemini 2.5 Flash)
+  
   try {
-    const ai = getAiClient();
-
-    const textPart = { text: getMushroomJsonPrompt(parts.find(p => p.text).text, language, difficulty) };
-    const imagePart = parts.find(p => p.inlineData);
-    const finalParts = imagePart ? [imagePart, textPart] : [textPart];
-
-    const config: any = {};
-    if (useGrounding) {
-      config.tools = [{ googleSearch: {} }];
-    } else {
-     config.responseMimeType = 'application/json';
-    }
-
+    // Attempt 1: Gemini 3 Pro
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: { parts: finalParts },
@@ -289,9 +301,7 @@ const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'e
     if (data.error) throw new Error("IDENTIFY_FAILED");
 
     const sanitizedData = sanitizeMushroomInfo(data);
-    if (!sanitizedData) {
-        throw new Error("IDENTIFY_FAILED");
-    }
+    if (!sanitizedData) throw new Error("IDENTIFY_FAILED");
     
     const sources: GroundingSource[] = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: GroundingChunk) => ({
             uri: chunk.web?.uri || '',
@@ -299,10 +309,43 @@ const getMushroomInfo = async (parts: any[], useGrounding: boolean, language: 'e
         })).filter(source => source.uri) || [];
 
     return { mushroomInfo: sanitizedData, sources };
+
   } catch (error) {
-    handleApiError(error);
-    // Fallback for unhandled errors from handleApiError
-    throw new Error("UNEXPECTED_ERROR");
+    // Check if it is a quota error
+    if (isQuotaError(error)) {
+        console.warn("Gemini 3 Pro quota exceeded. Falling back to Gemini 2.5 Flash.");
+        try {
+             // Attempt 2: Gemini 2.5 Flash
+             const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: { parts: finalParts },
+                config: config,
+              });
+
+              const data = getJsonFromResponse(response.text);
+              if (!data) throw new Error("INVALID_RESPONSE");
+              if (data.error) throw new Error("IDENTIFY_FAILED");
+          
+              const sanitizedData = sanitizeMushroomInfo(data);
+              if (!sanitizedData) throw new Error("IDENTIFY_FAILED");
+              
+              const sources: GroundingSource[] = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: GroundingChunk) => ({
+                      uri: chunk.web?.uri || '',
+                      title: chunk.web?.title || 'Untitled Source'
+                  })).filter(source => source.uri) || [];
+          
+              return { mushroomInfo: sanitizedData, sources };
+
+        } catch (fallbackError) {
+             // If fallback also fails, then handle as a real error
+             handleApiError(fallbackError);
+             throw new Error("UNEXPECTED_ERROR");
+        }
+    } else {
+        // If it was not a quota error (e.g. network), handle immediately
+        handleApiError(error);
+        throw new Error("UNEXPECTED_ERROR");
+    }
   }
 };
 
@@ -480,21 +523,41 @@ export const compareMushrooms = async (
 
         const textPart = { text: getCompareMushroomPrompt(mushroomA, mushroomB, language) };
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: { parts: [textPart] },
-            config: { responseMimeType: 'application/json' },
-        });
-
-        const data = getJsonFromResponse(response.text);
-        if (!data) throw new Error("INVALID_RESPONSE");
-        if (data.error) throw new Error("IDENTIFY_FAILED");
-        
-        const sanitizedData = sanitizeComparisonInfo(data);
-        if (!sanitizedData) {
-            throw new Error("INVALID_RESPONSE");
+        // Fallback for Comparison logic as well
+        try {
+             // Attempt 1: Pro
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-pro-preview',
+                contents: { parts: [textPart] },
+                config: { responseMimeType: 'application/json' },
+            });
+             const data = getJsonFromResponse(response.text);
+            if (!data) throw new Error("INVALID_RESPONSE");
+            if (data.error) throw new Error("IDENTIFY_FAILED");
+            
+            const sanitizedData = sanitizeComparisonInfo(data);
+            if (!sanitizedData) throw new Error("INVALID_RESPONSE");
+            return sanitizedData;
+        } catch (error) {
+             if (isQuotaError(error)) {
+                console.warn("Gemini 3 Pro quota exceeded during comparison. Falling back to Flash.");
+                // Attempt 2: Flash
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: { parts: [textPart] },
+                    config: { responseMimeType: 'application/json' },
+                });
+                const data = getJsonFromResponse(response.text);
+                if (!data) throw new Error("INVALID_RESPONSE");
+                if (data.error) throw new Error("IDENTIFY_FAILED");
+                
+                const sanitizedData = sanitizeComparisonInfo(data);
+                if (!sanitizedData) throw new Error("INVALID_RESPONSE");
+                return sanitizedData;
+             }
+             throw error;
         }
-        return sanitizedData;
+
     } catch (error) {
         handleApiError(error);
         throw new Error("UNEXPECTED_ERROR");
