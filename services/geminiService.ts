@@ -2,14 +2,26 @@ import { GoogleGenAI, GroundingChunk, Modality } from "@google/genai";
 import { MushroomInfo, GroundingSource, Recipe, SimilarMushroom, ComparisonInfo, ToxicityInfo, ImageQuality } from '../types.ts';
 
 // --- API CLIENT HELPER ---
-// We initialize the client on demand to ensure we always get the latest API key from the environment,
-// which is critical when the user selects a key via the window.aistudio interface.
+// We initialize the client on demand to ensure we always get the latest API key from the environment.
 const getAiClient = () => {
-    const apiKey = process.env.API_KEY;
+    // Safety check: Ensure process is defined before accessing env to prevent ReferenceErrors in some browser runtimes.
+    // We also use .trim() to remove accidental whitespace from copy-pasting the key in Render/env vars.
+    let apiKey: string | undefined;
+    try {
+        if (typeof process !== 'undefined' && process.env) {
+            apiKey = process.env.API_KEY;
+        }
+    } catch (e) {
+        console.warn("Error accessing process.env:", e);
+    }
+
     if (!apiKey) {
+        console.error("API Key check failed: process.env.API_KEY is missing.");
         throw new Error("SERVICE_CONFIG_ERROR_API_KEY_MISSING");
     }
-    return new GoogleGenAI({ apiKey });
+
+    // Initialize client with trimmed key to prevent "API Key not valid" errors due to whitespace
+    return new GoogleGenAI({ apiKey: apiKey.trim() });
 };
 
 
@@ -124,8 +136,9 @@ const handleApiError = (error: unknown) => {
         if (message.includes('SERVICE_CONFIG_ERROR_API_KEY_MISSING')) {
             throw error;
         }
-        // Generalize other API key errors for security.
+        // Generalize other API key errors. The API typically returns "API key not valid"
         if (message.toLowerCase().includes('api key not valid')) {
+            console.error("DETECTED INVALID API KEY. Please check your Render configuration for extra spaces or typos.");
             throw new Error("SERVICE_CONFIG_ERROR");
         }
         if (message.includes('429') || message.includes('resource has been exhausted')) {
@@ -210,7 +223,7 @@ function sanitizeMushroomInfo(data: any): MushroomInfo | null {
 }
 
 function sanitizeComparisonInfo(data: any): ComparisonInfo | null {
-    if (!data || typeof data !== 'object') return null;
+    if (!data || typeof data !== 'object' || data.error) return null;
     const getStringArray = (val: any): string[] => Array.isArray(val) ? val.filter(item => typeof item === 'string') : [];
     const getToxicityLevel = (val: any): ToxicityInfo['nivelToxicidad'] => {
         const levels: ToxicityInfo['nivelToxicidad'][] = ['Edible', 'Inedible', 'Caution', 'Poisonous', 'Lethal'];
